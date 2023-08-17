@@ -1,0 +1,90 @@
+
+fetched version with 2 docker commands (start deamon first) :
+docker pull yugabytedb/yugabyte:2.15.3.2-b1
+docker run -d --name yugabyte  -p7000:7000 -p9000:9000 -p5433:5433 -p9042:9042 yugabytedb/yugabyte:2.15.3.2-b1 bin/yugabyted start --daemon=false --ui=false
+
+
+-- new version:
+docker run -d --name yugabyte  -p7000:7000 -p9000:9000 -p5433:5433 -p9042:9042  7b640a82b04b  bin/yugabyted start --daemon=false --ui=false
+7b640a82b04b
+
+-- volume mapped
+docker run -d --name yb219b \
+  -p7000:7000 -p9000:9000 -p5433:5433 -p9042:9042 \
+  -v ~/var/yb_datb:/home/yugabyte/yb_data \
+  yugabytedb/yugabyte:latest bin/yugabyted start \
+  --base_dir=/home/yugabyte/yb_data --daemon=false
+
+to start the shell
+docker exec -it yugabyte /home/yugabyte/bin/ysqlsh
+
+shell didnt work, but psql did work:
+psql -h localhost -p 5433 -U yugabyte
+
+note: that shell from docker is inside the container ? 
+does it pick up scripts from laptop ?
+
+
+utils: you can shart bash and sh ..
+docker exec -it yugabyte /bin/bash
+
+
+the collect_logs was not found
+
+
+in case of non-start: remove files in
+/tmp/.yb... 
+:wq
+
+
+-- - -- notes franck -- -- -- 
+
+range or hash
+
+index in same or different tablet : how to measure impact ? 
+index: overload? add extra fields to favour index-only lookup ? 
+
+index: the first field is sharded by defulkt and next fieds are ordered.
+
+scan is seek-next, seek-next.. and LSM tree. need to read up on LSM
+
+
+- -- -- 
+
+try creating many tables...
+using pgplsql
+
+
+# try an RF=3... first with local container-data, later -v
+
+docker network create yb_net
+
+# start master, call it node1, netowrk addres: node1.yb_net
+docker run -d --network yb_net --hostname node1 --name node1 \
+  -p15433:15433 -p5433:5433 -p7001:7000 -p9001:9000 \
+  yugabytedb/yugabyte \
+ yugabyted start --background=false --ui=true
+
+#now add two nodes..
+docker run -d --network yb_net --hostname node2 --name node2 \
+ -p7002:7000 -p9002:9000 \
+ yugabytedb/yugabyte \
+ yugabyted start --background=false --join node1.yb_net
+
+docker run -d --network yb_net --hostname node3 --name node3 \
+ -p7003:7000 -p9003:9000 \
+ yugabytedb/yugabyte \
+ yugabyted start --background=false --join node1.yb_net
+
+# could add/drop node5 very simply
+docker run -d --network yb_net --hostname node3 --name node5 \
+ -p7005:7000 -p9005:9000 \
+ yugabytedb/yugabyte \
+ yugabyted start --background=false --join node1.yb_net
+
+# health checks:
+docker exec -it node1 yugabyted status 
+docker exec -it node2 yugabyted status 
+docker exec -it node3 yugabyted status 
+
+
