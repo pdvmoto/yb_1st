@@ -121,13 +121,14 @@ docker exec -it node6 yugabyted status
 
 # experiment with nodename, zone..
 docker run -d --network yb_net  \
-  --hostname node6 --name node6 \
-  -p7006:7000 -p9006:9000       \
+  --hostname node7 --name node7 \
+  -p7007:7000 -p9007:9000       \
   yugabytedb/yugabyte           \
-  yugabyted start --background=false --join node1.yb_net --placement_zone zone6
+  yugabyted start --background=false --join node1.yb_net
 
 
 echo .
+
 echo Scroll back and check if it all workd...
 echo .
 echo Also verify: 
@@ -139,4 +140,7 @@ echo Have Fun.
 echo .
 echo .
 
+
+Nodeneams:  edit, then restart..
+/root/var/conf/yugabyted.conf
 
