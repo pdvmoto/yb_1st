@@ -28,7 +28,7 @@ do
 
     echo $node:
     docker exec $node ps -ef  | grep database_host | cut -d= -f2  
-    docker exec -it $node yugabyted status | grep atus; sleep 5 ; echo .
+    docker exec -it $node yugabyted status | grep atus; sleep 2 ; echo .
 
     echo .
     echo $node get_universe_config:

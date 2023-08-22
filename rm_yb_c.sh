@@ -16,7 +16,8 @@ do
 done
 
 
-docker network rm yb_net
+# keep net, re-use IPs, easier 
+# docker network rm yb_net
 
 sleep 2
 

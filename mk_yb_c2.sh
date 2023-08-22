@@ -81,7 +81,7 @@ echo .
 echo Also verify: 
 echo  - connecting cli    : ysqlsh -h localhost -p 5433 -U yugabyte
 echo  - inspect dashboard : localhost:15433 
-echo  - inspect node3:    : localhost:7003   (and 9003, etc...)
+echo  - inspect node3:    : localhost:7003  and 9003, etc...
 echo . 
 echo Have Fun.
 echo .
