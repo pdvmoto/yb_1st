@@ -92,6 +92,7 @@ sleep 15
 docker run -d --network yb_net  \
   --hostname node4 --name node4 \
   -p7004:7000 -p9004:9000       \
+  -p15434:15433 -p5434:5433     \
   yugabytedb/yugabyte           \
   yugabyted start --background=false --join node1.yb_net
 
@@ -143,4 +144,49 @@ echo .
 
 Nodeneams:  edit, then restart..
 /root/var/conf/yugabyted.conf
+
+
+-- how to prepare a yb-node (automate...):
+ - install ybtool.gz, copy to PATH
+ - bash-export $MASTERS and some aliases.
+ - check yb-admin  
+ - 
+
+# 
+# yb-profile.sh: useful additions to bash-profile
+# add to /root/.bashrc, use do_all.sh ? 
+#
+export MASTERS=`cat /root/var/conf/yugabyted.conf | grep masters | cut -b25-71 ` 
+alias    yba='yb-admin -master_addresses $MASTERS ' 
+alias ybuniv='yb-admin -master_addresses $MASTERS get_universe_config '
+alias ybmast='yb-admin -master_addresses $MASTERS list_all_masters ' 
+alias ybtsrv='yb-admin -master_addresses $MASTERS list_all_tablet_servers '
+alias ybtbls='yb-admin -master_addresses $MASTERS list_tables  include_db_type include_table_id include_table_type | sed s'/\./\ /g' '
+
+# useful cuts:
+
+# cut out data from yb-admin, find tablet servers:
+tsrvrs  | tail -n3 | cut -c1-38,39-49,66-70 
+tsrvrs             | cut -c1-33,35-48,65-70,91-99
+ybmast | cut -c1-33,35-48,65-70
+
+# listing all tables with yb-admin: db, namespace, table-type (skip catalog), replace the dots by spaces
+yb-admin -master_addresses $MASTERS list_tables  include_db_type include_table_id include_table_type | sed s'/\./\ /g' 
+
+# list all tservers that serve a tablet, needs tablet-id
+yb-admin -master_addresses $MASTERS  list_tablet_servers 04b26afaf0604684aabba96f3d35f419 
+
+
+# nodes, masters and servers..
+create table ybwr_mstr ( uuid text primary key, hostadd text, status text ) ;
+create table ybwr_tsrv ( uuid text primary key, hostadd text, status text, up_secs bigint ) ;
+
+create table ybwr_tabl ( uuid text primary key, hostadd text, status text ) ;
+
+# cut data to file (or stdout) and read it with copy command
+ \copy m from 'mast.out' with delimiter ' ';
+ \copy m from 'tsrv.out' with delimiter ' ';
+
+
+
 
