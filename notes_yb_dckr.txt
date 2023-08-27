@@ -161,7 +161,12 @@ alias    yba='yb-admin -master_addresses $MASTERS '
 alias ybuniv='yb-admin -master_addresses $MASTERS get_universe_config '
 alias ybmast='yb-admin -master_addresses $MASTERS list_all_masters ' 
 alias ybtsrv='yb-admin -master_addresses $MASTERS list_all_tablet_servers '
+alias ybtrep='yb-admin -master_addresses $MASTERS list_tablet_servers '
 alias ybtbls='yb-admin -master_addresses $MASTERS list_tables  include_db_type include_table_id include_table_type | sed s'/\./\ /g' '
+
+add to profile for container: copy to container + cat to bashrc
+docker cp yb_profile.sh node1:/tmp/
+docker exec -it  node1  sh -c "cat /tmp/yb_profile.sh >> /root/.bashrc "  
 
 # useful cuts:
 
@@ -188,5 +193,14 @@ create table ybwr_tabl ( uuid text primary key, hostadd text, status text ) ;
  \copy m from 'tsrv.out' with delimiter ' ';
 
 
+# get more info, dsar + yb_stats : get executable from githubmm
+
+./dsar -H localhost -P 9001,9002,9003,9004,9005,9006 -o yb-cpu -i 1 
+./dsar -H localhost -P 9001,9002,9003,9004,9005,9006 -o yb-io -i 4 
+     
+and to investigate entities... 
+ ./yb_stats -H localhost -P 7001,7002 --print-entities | more 
+
+./yb_stats -H localhost -P 7001,7002  --print-masters  
 
 

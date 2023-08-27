@@ -1,8 +1,12 @@
 #!/bin/ksh
 #
-# mk_yb_c2.sh: 2nd cluster in docker
+# mk_yb_c2.sh: generate a yb cluster in docker
 #
 # This time: same 6 nodes, but more ports exposed.
+#
+# todo:
+#  - enhance /root/.bashrc
+#  - copy yugatool and link to /usr/local/bin
 #
 # purpose: check effets of too many tablets??
 # compare to co-location?
@@ -66,6 +70,15 @@ docker run -d --network yb_net  \
   -p7006:7000 -p9006:9000       \
   yugabytedb/yugabyte           \
   yugabyted start --background=false --join node1.yb_net
+
+docker run -d --network yb_net  \
+  --hostname node7 --name node7 \
+  -p15437:15433 -p5437:5433     \
+  -p7007:7000 -p9007:9000       \
+  yugabytedb/yugabyte           \
+  yugabyted start --background=false --join node1.yb_net
+
+#  -p13007:13000 -p12007:12000   \
 
 # health checks:
 docker exec -it node1 yugabyted status 
