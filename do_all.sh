@@ -16,7 +16,7 @@ echo do_all_clu: \[  $* \] ...
 echo .
 
 # do it once, quick...
-for node in node1 node2 node3 node4 node5 node6 node7
+for node in node2 node3 node4 node5 node6 node7 node8
 do
 
   echo doing node $node  
@@ -39,7 +39,7 @@ do
   echo do_all: \[  $* \] ... 
   echo .
 
-  for node in node1 node2 node3 node4 node5 node6 
+  for node in  node2 node3 node4 node5 node6 node7 node8
   do
 
     # echo doing node $node  
@@ -56,8 +56,11 @@ done
 
 # ----------------- end do_all_clu.sh -------------
 
+echo .
+echo notes: code should never get this far.. but keep as notes
+echo .
 
-# notes: code should never get this far.. but keep as notes
+sleep 10
 
 while true 
 do

@@ -9,7 +9,7 @@
 
 # do quick check first, minimal info, mininalsleep, just quick....
 # I notably want to verify the IP addy of each node.
-for node in node1 node2 node3 node4 node5 node6 node7
+for node in node2 node3 node4 node5 node6 node7 node8
 do
 
   echo doing node $node  
@@ -23,7 +23,7 @@ done
 while true 
 do
 
-  for node in node1 node2 node3 node4 node5 node6 node7
+  for node in node2 node3 node4 node5 node6 node7 node8
   do
 
     echo $node:

@@ -8,5 +8,5 @@
 # cat yugabyted.conf | jq -r '.current_masters'  
 #
 
-export MASTERS=`docker exec -it node1 cat /root/var/conf/yugabyted.conf | grep masters | cut -b25-71 `
+export MASTERS=`docker exec -it node2 cat /root/var/conf/yugabyted.conf | grep masters | cut -b25-71 `
 

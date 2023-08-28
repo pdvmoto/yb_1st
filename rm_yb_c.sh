@@ -7,7 +7,7 @@
 # Q: is there a way to measure "effort", possibly "chattyness" ?
 #
 
-for node in node6 node5 node4 node3 node2 node1
+for node in node8 node7 node6 node5 node4 node3 node2 
 do
   docker stop $node
   sleep 2
