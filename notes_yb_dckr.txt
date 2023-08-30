@@ -205,3 +205,12 @@ and to investigate entities...
 
 for failover, try  using an URI
 ysqlsh postgresql://yugabyte@localhost:5434,localhost:5433,localhost:5432,localhost:5431 
+
+
+worker node: nodeX 
+- runs stand alone 1 db
+- basrhc: same aliaes, but notably connecting to the cluster, via other nodes.
+- failover in ysql-uri
+- script to insert/sec.. : do_fill.sql
+  add connected-host to filler
+

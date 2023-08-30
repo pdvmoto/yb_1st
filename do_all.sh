@@ -26,7 +26,7 @@ done
 
 
 echo .
-echo do_all_clu.sh: Cntr-C or ...continue doing it slower forever...
+echo do_all_clu.sh: 10 sec to Cntr-C .. or .. continue doing it slower forever...
 echo . 
 
 sleep 10
@@ -42,7 +42,8 @@ do
   for node in  node2 node3 node4 node5 node6 node7 node8
   do
 
-    # echo doing node $node  
+    echo .
+    echo doing node $node :
     docker exec -it $node $*
 
     sleep 2 

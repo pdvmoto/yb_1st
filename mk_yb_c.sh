@@ -8,6 +8,7 @@
 # todo:
 #  - enhance /root/.bashrc  : do_profile.sh
 #  - copy yugatool and link to /usr/local/bin : do_profile.sh 
+#  - set worker node, ip-.10?
 #
 # purpose: check effets of too many tablets??
 # compare to co-location?
@@ -82,6 +83,16 @@ docker run -d --network yb_net  \
   yugabyted start --background=false --join node2.yb_net
 
 #  -p13007:13000 -p12007:12000   \
+
+
+# ---- add a generic platform, worker-node.. ----
+
+# use nodeX, to have a neutral node in the network, 
+docker run -d --network yb_net  \
+  --hostname nodeX --name nodeX \
+  --ip 172.20.0.21              \
+  yugabytedb/yugabyte           \
+  yugabyted start --background=false --ui=true
 
 # health checks:
 docker exec -it node1 yugabyted status 
