@@ -16,9 +16,9 @@
 # Q: is there a way to measure "effort", possibly "chattyness" ?
 #
 
-docker network rm yb_net
-sleep 2
-docker network create --subnet=172.20.0.0/16 --ip-range=172.20.0.0/24  yb_net
+# docker network rm yb_net
+# sleep 2
+# docker network create --subnet=172.20.0.0/16 --ip-range=172.20.0.0/24  yb_net
 
 # start 1st master, call it node2, network address: node2.yb_net
 docker run -d --network yb_net  \
@@ -112,6 +112,12 @@ echo  - connecting cli    : ysqlsh -h localhost -p 5433 -U yugabyte
 echo  - inspect dashboard : localhost:15433 
 echo  - inspect node3:    : localhost:7003  and 9003, etc...
 echo . 
+echo . If so desired : 
+echo .    - complete config of nodes 2-8 using  ./do_profile.sh, loops over nodes!
+echo .    - run yb_init.sql to load often-used functions.
+echo .    - run demo_fill.sql to load demo-table t, and use it for checks/monitor.
+echo . 
 echo Have Fun.
+ehco .
 echo .
 echo .

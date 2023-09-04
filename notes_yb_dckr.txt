@@ -214,3 +214,7 @@ worker node: nodeX
 - script to insert/sec.. : do_fill.sql
   add connected-host to filler
 
+
+todo:
+ - ensure pg-startup by removing sockets..
+  rm -rf /tmp/.yb.*

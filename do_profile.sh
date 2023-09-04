@@ -4,6 +4,8 @@
 # do_profile.sh: rollout profile- and some tools to yb-nodes
 #
 # todo: HARDcoded nodenames : make a list.
+# todo: add .psqlrc to rollout
+# todo: add psg to rollout
 #
 
 # set -v -x 
@@ -17,6 +19,14 @@ do
   echo $node : adding profile ...
   docker cp yb_profile.sh $node:/tmp/
   docker exec -it $node sh -c "cat /tmp/yb_profile.sh >> /root/.bashrc "
+
+  echo $node : adding psqlrc
+  docker cp ~/.psqlrc $node:/tmp
+  docker exec -it $node sh -c "cp /tmp/.psqlrc /root/.psqlrc"
+
+  echo $node : adding psg....
+  docker cp `which psg` $node:/usr/local/bin/psg
+  docker exec -it $node chmod 755 /usr/local/bin/psg
 
   # more tooling... make sure the files are in working dir
 
