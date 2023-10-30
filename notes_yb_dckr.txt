@@ -218,3 +218,10 @@ worker node: nodeX
 todo:
  - ensure pg-startup by removing sockets..
   rm -rf /tmp/.yb.*
+
+
+scale-up to handle peak-usage..
+ - Looking to scale up (not quite out) without extra nodes or shards
+ - Can other nodes Read from shared or borrowed storage ? (e.g. read data without having to replicate data to read-only nodes)
+ - 
+
