@@ -10,16 +10,16 @@
 for node in node8 node7 node6 node5 node4 node3 node2 
 do
   docker stop $node
-  sleep 2
+  sleep 1
   docker rm $node
-  sleep 2
+  sleep 1
 done
 
 
 # keep net, re-use IPs, easier 
 # docker network rm yb_net
 
-sleep 2
+sleep 1
 
 docker network list
 
