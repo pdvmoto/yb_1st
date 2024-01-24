@@ -17,7 +17,7 @@
 #
 # notes
 # old image: 
-#  yugabytedb/yugabyte:2.19.0.0-b190        \
+#  this one works: yugabytedb/yugabyte:2.19.0.0-b190        \
 # newer image check sites...
 # docker pull yugabytedb/yugabyte:2.19.3.0-b140
 # latest in Jan 2024:   yugabytedb/yugabyte:2.20.1.0-b97               \
@@ -27,8 +27,8 @@
 #   3 zones, with 2 nodes each ?
 #   start with putting nodes in zones..
 
--- docker network rm yb_net
--- sleep 2
+# docker network rm yb_net
+# sleep 2
 docker network create --subnet=172.20.0.0/16 --ip-range=172.20.0.0/24  yb_net
 sleep 2
 
@@ -38,8 +38,9 @@ docker run -d --network yb_net  \
   -p15432:15433 -p5432:5433     \
   -p7002:7000 -p9002:9000       \
   yugabytedb/yugabyte:2.19.0.0-b190        \
-  yugabyted start --background=false --ui=true  \
-  --cloud_location=cld1.rgn1.zne2 --fault_tolerance=region
+  yugabyted start --background=false --ui=true 
+
+# --cloud_location=cld1.rgn1.zne2 --fault_tolerance=region
 
 # found out the hard way that a small pause is beneficial
 sleep 20
@@ -50,8 +51,7 @@ docker run -d --network yb_net  \
   -p15433:15433 -p5433:5433     \
   -p7003:7000 -p9003:9000       \
   yugabytedb/yugabyte:2.19.0.0-b190        \
-  yugabyted start --background=false --join=node2 \
-  --cloud_location=cld1.rgn1.zne3
+  yugabyted start --background=false --join=node2
 
 sleep 15
 
@@ -60,8 +60,7 @@ docker run -d --network yb_net  \
   -p15434:15433 -p5434:5433     \
   -p7004:7000 -p9004:9000       \
   yugabytedb/yugabyte:2.19.0.0-b190        \
-  yugabyted start --background=false --join=node2 \
-  --cloud_location=cld1.rgn2.zne2
+  yugabyted start --background=false --join=node2
 
 sleep 10
 
@@ -73,8 +72,7 @@ docker run -d --network yb_net  \
   -p15435:15433 -p5435:5433     \
   -p7005:7000 -p9005:9000       \
   yugabytedb/yugabyte:2.19.0.0-b190        \
-  yugabyted start --background=false --join node2 \
-  --cloud_location=cld1.rgn2.zne3
+  yugabyted start --background=false --join node2
 
 sleep 10
 
@@ -83,9 +81,7 @@ docker run -d --network yb_net  \
   -p15436:15433 -p5436:5433     \
   -p7006:7000 -p9006:9000       \
   yugabytedb/yugabyte:2.19.0.0-b190        \
-  yugabyted start --background=false --join node2 \
-  --cloud_location=cld1.rgn3.zne2
-
+  yugabyted start --background=false --join node2
 
 sleep 10
 
@@ -94,18 +90,14 @@ docker run -d --network yb_net  \
   -p15437:15433 -p5437:5433     \
   -p7007:7000 -p9007:9000       \
   yugabytedb/yugabyte:2.19.0.0-b190        \
-  yugabyted start --background=false --join node2 \
-  --cloud_location=cld1.rgn3.zne3
-
+  yugabyted start --background=false --join node2
 
 docker run -d --network yb_net  \
   --hostname node8 --name node8 \
   -p15438:15433 -p5438:5433     \
    -p7008:7000  -p9008:9000     \
   yugabytedb/yugabyte:2.19.0.0-b190        \
-  yugabyted start --background=false --join node2 \
-  --cloud_location=cld1.rgn4.zne2
-
+  yugabyted start --background=false --join node2
 
 #  -p13007:13000 -p12007:12000   \
 
