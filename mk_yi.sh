@@ -1,14 +1,16 @@
 #!/bin/ksh
 #
-# mk_yb_c.sh: generate a yb cluster in docker
+# mk_yi.sh: generate a yb cluster in docker, interactive nodes (servers).
 #
-# This time: same 6+ nodes, but more ports exposed.
-# trick: start at node2, so last digit of ip = node-nr
+# This time: same 6+ nodes, same ports exposed.
+# trick: start with some other program to similate server-light containers, 
+#        then start yugabyted "manually"
 #
 # todo:
-#  - enhance /root/.bashrc  : do_profile.sh
-#  - copy yugatool and link to /usr/local/bin : do_profile.sh 
-#  - set worker node, ip-.10?
+#  - create loop over nodes 3-8, easier on script
+#  - automatically enhance /root/.bashrc  : do_profile.sh
+#  - automatically copy yugatool and link to /usr/local/bin : do_profile.sh 
+#  - set worker nodes, ip-.10?
 #
 # purpose: check effets of too many tablets??
 # compare to co-location?
@@ -26,11 +28,14 @@
 #   3 zones, with 2 nodes each ?
 #   start with putting nodes in zones..
 
+# how many nodes...(node2 is special!)
+nodelist="node2 node3 node4"
+
 # choose an image
-# YB_IMAGE=yugabytedb/yugabyte:latest
-YB_IMAGE=yugabytedb/yugabyte:2.19.0.0-b190        \
-# YB_IMAGE=yugabytedb/yugabyte:2.19.3.0-b140
+  YB_IMAGE=yugabytedb/yugabyte:latest
+# YB_IMAGE=yugabytedb/yugabyte:2.19.0.0-b190        \
 # YB_IMAGE=yugabytedb/yugabyte:2.20.1.0-b97
+# YB_IMAGE=yugabytedb/yugabyte:2.20.1.3-b3
 
 
 # docker network rm yb_net
@@ -43,35 +48,59 @@ docker run -d --network yb_net  \
   --hostname node2 --name node2 \
   -p15432:15433 -p5432:5433     \
   -p7002:7000 -p9002:9000       \
-  -v /Users/pdvbv/yb_data/n2:/root/var  \
+  -v /Users/pdvbv/yb_data/node2:/root/var  \
   $YB_IMAGE                             \
-  yugabyted start --background=false --ui=true
+  tail -f /dev/null
+
+#  tail -f /dev/null
+
+sleep 5
+
+docker exec node2 yugabyted start --background=true --ui=true
 
 # found out the hard way that a small pause is beneficial
-sleep 15
+sleep 5
 
 #now add nodes..
 docker run -d --network yb_net  \
   --hostname node3 --name node3 \
   -p15433:15433 -p5433:5433     \
   -p7003:7000 -p9003:9000       \
-  -v /Users/pdvbv/yb_data/n3:/root/var  \
+  -v /Users/pdvbv/yb_data/node3:/root/var  \
   $YB_IMAGE                             \
-  yugabyted start --background=false --join=node2
+  tail -f /dev/null
 
-sleep 15
+# yugabyted start --background=true --join=node2
+
+#  use this to start a server-node  tail -f /dev/null
+
+sleep 5
+
+docker exec node3 yugabyted start --background=true --join=node2
+
+sleep 5
 
 docker run -d --network yb_net  \
   --hostname node4 --name node4 \
   -p15434:15433 -p5434:5433     \
   -p7004:7000 -p9004:9000       \
-  -v /Users/pdvbv/yb_data/n4:/root/var  \
+  -v /Users/pdvbv/yb_data/node4:/root/var  \
   $YB_IMAGE                             \
-  yugabyted start --background=false --join=node2
+  tail -f /dev/null
 
-# sleep 10
+# yugabyted start --background=true --join=node2
 
-echo now 3 nodes done. use enter to continue. cntrol C to stop...
+# tail -f /dev/null
+
+sleep 5
+
+docker exec node4 yugabyted start --background=true --join=node2
+
+sleep 1
+
+echo .
+echo Now 3 nodes done as severs. use ENTER to Continue. Control C to stop...
+echo .
 read abc
 
 docker run -d --network yb_net  \
@@ -151,6 +180,5 @@ echo .    - run yb_init.sql to load often-used functions.
 echo .    - run demo_fill.sql to load demo-table t, and use it for checks/monitor.
 echo . 
 echo Have Fun.
-ehco .
 echo .
 echo .

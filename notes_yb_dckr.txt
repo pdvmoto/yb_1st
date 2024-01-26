@@ -225,3 +225,77 @@ scale-up to handle peak-usage..
  - Can other nodes Read from shared or borrowed storage ? (e.g. read data without having to replicate data to read-only nodes)
  - 
 
+next:
+ - run container with bash, as vritual server.
+ - test join/stop/start of nodes, from sever-level.
+ - use hostnames ?
+ - test procstat
+
+
+Hi all,
+
+TL;DR: re-starting a stopped node fails with an error that doesnt make sense to me.
+
+I have a difference in behaviour between two (several) container-versions.
+
+So far I've used :
+# choose an image
+# YB_IMAGE=yugabytedb/yugabyte:latest
+# YB_IMAGE=yugabytedb/yugabyte:2.19.0.0-b190
+# YB_IMAGE=yugabytedb/yugabyte:2.19.3.0-b140
+  YB_IMAGE=yugabytedb/yugabyte:2.20.1.0-b97
+
+My last "working" version is 2.19.0.0-b190
+None of the higher version work, and they produce the same error/phenomenon:
+ON the stop+restart of a node, it tries to retrieve the master-info from node2, it retrieves the correct IP, but it refuses to join, and reports that a node is already running on that address..
+
+it means that after cluster-create (with success), I permanently loose every node I shut down. 
+The tail from a yugabyted.log:
+[yugabyted start] 2024-01-26 13:47:26,930 INFO:  | 0.0s | Running yugabyted command: '/usr/local/bin/yugabyted start --background=true --join node4'
+[yugabyted start] 2024-01-26 13:47:26,930 INFO:  | 0.0s | cmd = start using config file: /root/var/conf/yugabyted.conf (args.config=None)
+[yugabyted start] 2024-01-26 13:47:26,932 INFO:  | 0.0s | Found directory /home/yugabyte/bin for file openssl_proxy.sh
+[yugabyted start] 2024-01-26 13:47:26,932 INFO:  | 0.0s | Found directory /home/yugabyte/bin for file yb-admin
+[yugabyted start] 2024-01-26 13:47:26,934 INFO:  | 0.0s | Fetching configs from join IP...
+[yugabyted start] 2024-01-26 13:47:26,935 INFO:  | 0.0s | Trying to get masters information from http://node4:9000/api/v1/masters (Timeout=60)
+[yugabyted start] 2024-01-26 13:47:26,941 DEBUG:  | 0.0s | Tserver node4 returned the followingmaster leader 172.20.0.2.
+[yugabyted start] 2024-01-26 13:47:26,943 ERROR:  | 0.0s | ERROR: A node is already running on 172.20.0.2, please specify a valid address.
+For more information, check the logs in /root/var/logs
+/end-tail.
+
+I seems obvious: the starting process thinks it is on the same IP as the previously started node, but.. it isnt.
+
+The first node in the cluster is started, using:
+# start 1st master, call it node2, network address: node2.yb_net
+docker run -d --network yb_net  \
+  --hostname node2 --name node2 \
+  -p15432:15433 -p5432:5433     \
+  -p7002:7000 -p9002:9000       \
+  -v /Users/pdvbv/yb_data/n2:/root/var  \
+  $YB_IMAGE                             \
+  tail -f /dev/null
+
+docker exec node2 yugabyted start --background=true --ui=true
+
+All subsequent nodes are started, with instrution to join:
+
+#now add nodes..
+docker run -d --network yb_net  \
+  --hostname node3 --name node3 \
+  -p15433:15433 -p5433:5433     \
+  -p7003:7000 -p9003:9000       \
+  -v /Users/pdvbv/yb_data/n3:/root/var  \
+  $YB_IMAGE                             \
+  tail -f /dev/null
+
+docker exec node3 yugabyted start --background=true --join=node2
+
+
+This way, I can succesfully start a 7 node cluster and run whatever tests I want.
+But .. on stop-start of any node, it refuses, and produces the error above....
+
+
+Any Idea ?
+What is diff for join=node in the later versions?
+What options should I give yugabyted in newer versions ? 
+
+

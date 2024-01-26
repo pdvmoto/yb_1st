@@ -12,7 +12,7 @@ do
   docker stop $node
   sleep 1
   docker rm $node
-  sleep 1
+  echo $node is gone
 done
 
 
