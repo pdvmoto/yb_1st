@@ -11,6 +11,7 @@
 #  - automatically enhance /root/.bashrc  : do_profile.sh
 #  - automatically copy yugatool and link to /usr/local/bin : do_profile.sh 
 #  - set worker nodes, ip-.10?
+#  - use yugabyted.conf as controlling file, parameter-file.
 #
 # purpose: check effets of too many tablets??
 # compare to co-location?
