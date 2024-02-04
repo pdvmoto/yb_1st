@@ -4,8 +4,9 @@
 #
 
 # jq needs proper install, not yet...
-# export MASTERS=`cat /root/var/conf/yugabyted.conf | jq -r .current_masters`
-export MASTERS=`cat /root/var/conf/yugabyted.conf | grep masters | cut -b25-71 `
+export MASTERS=`cat /root/var/conf/yugabyted.conf | jq -r .current_masters | sed s'/\"//g' `
+# export MASTERS=`cat /root/var/conf/yugabyted.conf | grep masters | cut -b25-71 `
+# export MASTERS=`cat mst.out | sed s'/\"//g' `  
 
 alias       ll='ls -la '
 alias      ltm='ls -ltra ' 

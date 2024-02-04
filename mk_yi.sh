@@ -12,6 +12,9 @@
 #  - automatically copy yugatool and link to /usr/local/bin : do_profile.sh 
 #  - set worker nodes, ip-.10?
 #  - use yugabyted.conf as controlling file, parameter-file.
+#  - is it enough to just specify "masters", instead of join ? 
+#  - note: background=true and ui=true are specified, but those values are default ?
+#
 #
 # purpose: check effets of too many tablets??
 # compare to co-location?
@@ -29,14 +32,14 @@
 #   3 zones, with 2 nodes each ?
 #   start with putting nodes in zones..
 
-# how many nodes...(node2 is special!)
-nodelist="node2 node3 node4"
+# depreciate: how many nodes...(node2 is special!)
+# nodelist="node2 node3 node4"
 
 # choose an image
-  YB_IMAGE=yugabytedb/yugabyte:latest
+# YB_IMAGE=yugabytedb/yugabyte:latest
 # YB_IMAGE=yugabytedb/yugabyte:2.19.0.0-b190        \
 # YB_IMAGE=yugabytedb/yugabyte:2.20.1.0-b97
-# YB_IMAGE=yugabytedb/yugabyte:2.20.1.3-b3
+YB_IMAGE=yugabytedb/yugabyte:2.20.1.3-b3
 
 
 # docker network rm yb_net
@@ -87,7 +90,7 @@ do
 
   echo .
 
-  sleep 1
+  sleep 2
 
 done
 
@@ -103,8 +106,10 @@ echo .
 echo node2 is the first node, need to Create the DB, other will just Join
 echo .
 
-docker exec node2 yugabyted start --background=true --ui=true
+docker exec node2 yugabyted start --advertise_address=node2 --background=true --ui=true
 
+echo .
+echo database created on node2: 5 sec to Cntr-C .. or .. loop Start over all nodes.
 echo .
 echo note: we tolerate an error for node2 to allow uniform command for all nodes.
 echo .
@@ -116,14 +121,14 @@ do
 
   hname=node${nodenr} 
 
-  startcmd=`echo docker exec ${hname} yugabyted start --join=node2 `
+  startcmd=`echo docker exec ${hname} yugabyted start --advertise_address=$hname --join=node2 `
 
   echo command will be : ${startcmd}
 
   ${startcmd}
 
   echo .
-  sleep 5
+  sleep 4
 
 done
 

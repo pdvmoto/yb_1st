@@ -49,6 +49,14 @@ index: the first field is sharded by defulkt and next fieds are ordered.
 scan is seek-next, seek-next.. and LSM tree. need to read up on LSM
 
 
+IP or hostname: 
+ - why does YB use IP, notably in the masterlist I cant get rid of IPs
+
+
+PG-version: 
+ - time to upgrade.. why the wait, what are the bottlenecks.
+
+
 - -- -- 
 
 try creating many tables...
@@ -297,5 +305,23 @@ But .. on stop-start of any node, it refuses, and produces the error above....
 Any Idea ?
 What is diff for join=node in the later versions?
 What options should I give yugabyted in newer versions ? 
+
+
+Hello,
+
+TL;DR: can a node/master/tserver in a cluster use hostname, rather then IP because the IP can be different restart.? 
+
+I am running a 7-node cluster, currently from docker containers.
+The image I use is: YB_IMAGE=yugabytedb/yugabyte:2.20.1.3-b3
+
+the stoping of containers (nodes) is either done by "killing container", or using yugabyted stop.
+starting is done by "yugabyted start"  (no options needed? as the join-node is specified in yugabyted.conf)
+
+By stopping and starting containers, I can not guaranteel each container (node) always has the same IP.
+This seems to be a problem becasue the yugabyted.conf stores the masterlist as IP:port, and not as nodename:port.
+
+my questions are:
+ - is it supported that host or node with YB master or tserver on it is re-started with same hostname but another IP ? 
+ - is yugbyted.conf the only place where IPs or nodenames are kept+stored ? 
 
 
