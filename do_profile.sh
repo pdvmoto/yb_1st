@@ -30,12 +30,13 @@ do
 
   # more tooling... make sure the files are in working dir
 
+  echo $node : adding jq ....
   # skip jq, libs and yum need too much space ?
   # echo $node : installing jq  ...
   # docker cp jq $node:/usr/bin/jq
   docker exec $node yum install jq -y  
 
-  echo $node : yugatool 
+  echo $node : adding yugatool ...
   docker cp yugatool.gz $node:/home/yugabyte/bin
   cat <<EOF | docker exec -i $node sh
     gunzip /home/yugabyte/bin/yugatool.gz

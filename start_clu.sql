@@ -15,6 +15,9 @@ nodelist="node2 node3 node4 node5 node6 node7 node8 nodeX nodeY "
 for node in $nodelist
 do
 
+  echo .
+  echo starting $node
+
   docker start $node
   sleep 1
 
@@ -25,9 +28,11 @@ do
 
 EOF
 
-docker stop $node
-sleep 1
-docker start $node
+  docker stop $node
+  sleep 1
+  docker start $node
+  sleep 2
+  docker exec $node yugabyted start
 
 done
 
