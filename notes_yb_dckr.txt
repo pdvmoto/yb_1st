@@ -325,3 +325,8 @@ my questions are:
  - is yugbyted.conf the only place where IPs or nodenames are kept+stored ? 
 
 
+Testing:
+ - explain plan : 1 table, 1-n tables (in which direction to search)
+ - when to use hash, when to use range
+ - colocation : for smal tables
+ - how many tablets ? 2, 8 ? 
