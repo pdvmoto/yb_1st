@@ -1,7 +1,7 @@
 #
 # run this to set up proxy for ysqlsh on port 26250 (copied from crdb)
 #
-# start: $ haproxy -f haproxy_yb.cfg (e.g. use this file as config), can also run as nohup.
+# start: $ nohup haproxy -f haproxy_yb.cfg & (e.g. use this file as config), can run as nohup.
 #
 # notes: the check could be better, currently just check if metrics are behind port :900x/metrics
 #
