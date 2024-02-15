@@ -1,0 +1,16 @@
+tip from Franck to build image that fixes both 1) join flag and 2) remove .yb
+
+
+@Piet de Visser
+ I came with this to try to make it as 'simple' as possible
+I build my own image with an entrypoint that ignores flags (passed in environment variable) on re-start:
+FROM  yugabytedb/yugabyte:latest
+CMD  [ -f /root/var/conf/yugabyted.conf ] && flags="" ; rm -rf /tmp/.yb.* ; yugabyted start $flags --background=false --tserver_flags=yb_enable_read_committed_isolation=true 
+build it with docker build -t yugabyted .
+
+use it like this:
+docker run -d --name yb0 --hostname yb0 --network yb -p15433:15433 -e flags='--advertise_address=yb0.yb --cloud_location=lab.yb.zoneA --fault_tolerance=zone' yugabyted 
+
+docker run -d --name yb1 --hostname yb1 --network yb -e flags='--join yb0.yb --advertise_address=yb1.yb --cloud_location=lab.yb.zoneB --fault_tolerance=zone' yugabyted 
+
+docker run -d --name yb2 --hostname yb2 --network yb -e flags='--join yb0.yb --advertise_address=yb2.yb --cloud_location=lab.yb.zoneC --fault_tolerance=zone' yugabyted 
