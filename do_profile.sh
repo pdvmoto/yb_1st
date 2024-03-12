@@ -24,6 +24,9 @@ do
   docker cp ~/.psqlrc $node:/tmp
   docker exec -it $node sh -c "cp /tmp/.psqlrc /root/.psqlrc"
 
+  echo $node : adding ybflags.conf 
+  docker cp ybflags.conf $node:/home/yugabyte/
+
   echo $node : adding psg....
   docker cp `which psg` $node:/usr/local/bin/psg
   docker exec -it $node chmod 755 /usr/local/bin/psg

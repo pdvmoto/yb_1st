@@ -19,7 +19,7 @@ do
   echo starting $node
 
   docker start $node
-  sleep 1
+  sleep 2
 
   # remove socket (if exists...)
   cat <<EOF | docker exec -i $node sh
@@ -29,7 +29,7 @@ do
 EOF
 
   docker stop $node
-  sleep 1
+  sleep 2
   docker start $node
   sleep 2
   docker exec $node yugabyted start

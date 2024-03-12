@@ -1,4 +1,5 @@
 #!/bin/ksh
+# set -v -x
 #
 # mk_yi.sh: generate a yb cluster in docker, interactive nodes (servers).
 #
@@ -11,7 +12,7 @@
 #  - automatically enhance /root/.bashrc  : do_profile.sh
 #  - automatically copy yugatool and link to /usr/local/bin : do_profile.sh 
 #  - set worker nodes, ip-.10?
-#  - use yugabyted.conf as controlling file, parameter-file.
+#  - use yugabyted.conf as controlling file, parameter-file. - included
 #  - is it enough to just specify "masters", instead of join ? 
 #  - note: background=true and ui=true are specified, but those values are default ?
 #
@@ -59,8 +60,9 @@ sleep 2
 #
 
 nodenrs="2 3 4 5 6 7 8"
+# nodenrs="2 3 4"
 
-# create nodes, platform, no db yet...
+# create nodes, platform, install tools, but no db yet...
 for nodenr in $nodenrs
 do
 
@@ -69,6 +71,7 @@ do
   pgport=543${nodenr}
   yb7port=700${nodenr}
   yb9port=900${nodenr}
+  yb13port=1343${nodenr}
   yb15port=1543${nodenr}
 
   echo creating node ${hname}
@@ -78,16 +81,56 @@ do
     --hostname $hname --name $hname          \
     -p${pgport}:5433                         \
     -p${yb7port}:7000 -p${yb9port}:9000      \
+    -p${yb13port}:13433                      \
     -p${yb15port}:15433                      \
     -v /Users/pdvbv/yb_data/$hname:/root/var \
     $YB_IMAGE                                \
     tail -f /dev/null `
  
+  echo $hname ... creating container:
   echo $crenode
 
   # do it..
   $crenode
 
+  echo .
+  sleep 1
+  
+  echo $hname : adding tools 
+  echo .
+  echo $hname : adding jq .... Why first 
+  # skip jq, libs and yum need too much space ?
+  # echo $hname : installing jq  ...
+  # docker cp jq $hname:/usr/bin/jq
+  # docker exec $hname yum install jq -y
+
+  echo $hname : adding profile ...
+  docker cp yb_profile.sh $hname:/tmp/
+  docker exec -it $hname sh -c "cat /tmp/yb_profile.sh >> /root/.bashrc "
+
+  echo $hname : adding psqlrc
+  docker cp ~/.psqlrc $hname:/tmp
+  docker exec -it $hname sh -c "cp /tmp/.psqlrc /root/.psqlrc"
+
+  echo $node : adding ybflags.conf
+  docker cp ybflags.conf $hname:/home/yugabyte/
+
+  echo $node : adding psg....
+  docker cp `which psg` $hname:/usr/local/bin/psg
+  docker exec -it $hname chmod 755 /usr/local/bin/psg
+
+  # more tooling... make sure the files are in working dir
+
+  echo $hname : adding yugatool ...
+  docker cp yugatool.gz $hname:/home/yugabyte/bin
+  cat <<EOF | docker exec -i $hname sh
+    gunzip /home/yugabyte/bin/yugatool.gz
+    chmod 755 /home/yugabyte/bin/yugatool
+    ln -s /home/yugabyte/bin/yugatool /usr/local/bin/yugatool
+EOF
+
+  echo .
+  echo $hname : tools installed.
   echo .
 
   sleep 2
@@ -96,7 +139,11 @@ done
 
 
 echo .
-echo nodes created: 5 sec to Cntr-C .. or .. continue doing it slower forever...
+echo nodes created, next is starting yb 
+echo .
+echo if config files needed: stop  + do_profile.sh
+echo .
+echo pause 5 sec to Cntr-C .. or continue...
 echo . 
 
 sleep 5
@@ -106,7 +153,11 @@ echo .
 echo node2 is the first node, need to Create the DB, other will just Join
 echo .
 
-docker exec node2 yugabyted start --advertise_address=node2 --background=true --ui=true
+# docker exec node2 yugabyted start --advertise_address=node2 --background=true --ui=true
+  docker exec node2 yugabyted start \
+    --advertise_address=node2       \
+    --tserver_flags=flagfile=/home/yugabyte/ybflags.conf \
+     --master_flags=flagfile=/home/yugabyte/ybflags.conf 
 
 echo .
 echo database created on node2: 5 sec to Cntr-C .. or .. loop Start over all nodes.
@@ -121,7 +172,9 @@ do
 
   hname=node${nodenr} 
 
-  startcmd=`echo docker exec ${hname} yugabyted start --advertise_address=$hname --join=node2 `
+  startcmd=`echo docker exec ${hname} yugabyted start --advertise_address=$hname --join=node2 \
+    --tserver_flags=flagfile=/home/yugabyte/ybflags.conf \
+     --master_flags=flagfile=/home/yugabyte/ybflags.conf `
 
   echo command will be : ${startcmd}
 
