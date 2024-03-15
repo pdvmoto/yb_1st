@@ -6,7 +6,7 @@
 # todo: clear sockets to start postgres? (minor?)
 #
 
-set -v -x 
+# set -v -x 
 
 # nodelist="node1 node2 node3 node4 node5 node6"
 # nodelist="node2 node3 node4 node5 node6 node7 node8 nodeX nodeY "

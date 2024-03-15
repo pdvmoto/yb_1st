@@ -131,6 +131,12 @@ do
     ln -s /home/yugabyte/bin/yugatool /usr/local/bin/yugatool
 EOF
 
+  # echo $hname : adding jq .... Why first 
+  # skip jq, libs and yum need too much space ?
+  echo $hname : installing jq  ...
+  # docker cp jq $hname:/usr/bin/jq
+  docker exec $hname yum install jq -y
+
   echo .
   echo $hname : tools installed.
   echo .
