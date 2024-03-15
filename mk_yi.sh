@@ -83,10 +83,12 @@ do
     -p${yb7port}:7000 -p${yb9port}:9000      \
     -p${yb13port}:13433                      \
     -p${yb15port}:15433                      \
-    -v /Users/pdvbv/yb_data/$hname:/root/var \
     $YB_IMAGE                                \
     tail -f /dev/null `
  
+  # to map volume, add this line..
+  #  -v /Users/pdvbv/yb_data/$hname:/root/var \
+
   echo $hname ... creating container:
   echo $crenode
 
