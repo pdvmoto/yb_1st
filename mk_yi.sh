@@ -42,6 +42,8 @@
 # YB_IMAGE=yugabytedb/yugabyte:2.20.1.0-b97
 YB_IMAGE=yugabytedb/yugabyte:2.20.1.3-b3
 
+# get some file to log stmnts, start simple
+LOGFILE=mk_nodes.log
 
 # docker network rm yb_net
 # sleep 2
@@ -92,6 +94,8 @@ do
   echo $hname ... creating container:
   echo $crenode
 
+  echo $crenode >> $LOGFILE
+
   # do it..
   $crenode
 
@@ -133,9 +137,10 @@ EOF
 
   # echo $hname : adding jq .... Why first 
   # skip jq, libs and yum need too much space ?
-  echo $hname : installing jq  ...
+  echo $hname : installing jq and chrony ...
   # docker cp jq $hname:/usr/bin/jq
   docker exec $hname yum install jq -y
+  docker exec $hname yum install chrony -y
 
   echo .
   echo $hname : tools installed.

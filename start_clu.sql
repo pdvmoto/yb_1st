@@ -29,10 +29,10 @@ do
 
 EOF
 
-  docker stop $node
-  sleep 2
-  docker start $node
-  sleep 2
+  # docker stop $node
+  # sleep 2
+  # docker start $node
+  # sleep 2
   docker exec $node yugabyted start
 
 done
