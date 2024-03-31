@@ -40,7 +40,8 @@
 # YB_IMAGE=yugabytedb/yugabyte:latest
 # YB_IMAGE=yugabytedb/yugabyte:2.19.0.0-b190        \
 # YB_IMAGE=yugabytedb/yugabyte:2.20.1.0-b97
-YB_IMAGE=yugabytedb/yugabyte:2.20.1.3-b3
+# YB_IMAGE=yugabytedb/yugabyte:2.20.1.3-b3
+  YB_IMAGE=yugabytedb/yugabyte:2.21.0.0-b545
 
 # get some file to log stmnts, start simple
 LOGFILE=mk_nodes.log
@@ -61,8 +62,8 @@ sleep 2
 #  - how to get to K8s ??
 #
 
-nodenrs="2 3 4 5 6 7 8"
-# nodenrs="2 3 4"
+# nodenrs="2 3 4 5 6 7 8"
+nodenrs="2 3 4"
 
 # create nodes, platform, install tools, but no db yet...
 for nodenr in $nodenrs
@@ -85,6 +86,7 @@ do
     -p${yb7port}:7000 -p${yb9port}:9000      \
     -p${yb13port}:13433                      \
     -p${yb15port}:15433                      \
+    -v /Users/pdvbv/yb_data/$hname:/root/var \
     $YB_IMAGE                                \
     tail -f /dev/null `
  
