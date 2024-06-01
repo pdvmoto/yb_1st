@@ -24,13 +24,13 @@ create table d2 (
 );
 
 -- cache so big it never hurts
--- alter sequence d2_id_seq cache 1000000 ; 
+alter sequence d2_id_seq cache 100000 ; 
 
 \! sleep 2
 
 copy d2 (data) from program
 $bash$
-base64 -i /dev/urandom -w 1024 | head -100000
+base64 -i /dev/urandom -w 1024 | head -1000
 $bash$ with ( replace ) ;
 
 
