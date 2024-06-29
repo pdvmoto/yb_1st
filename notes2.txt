@@ -1,0 +1,42 @@
+
+1. to get the vagrant template: 
+vagrant box add FritsHoogland/centos8-yugabyte-2.7.0.0
+
+2. from the dediated vagrant yb directory: start a single node, RF=1.
+cp ~/.vagrant.d/boxes/FritsHoogland-VAGRANTSLASH-centos8-yugabyte-2.7.0.0/0.0.3/virtualbox/Vagrantfile .
+vagrant up
+
+3. to start a 3-node cluster, first export RF=3, then use same Vagrantfile:
+export RF=3
+vagrant up
+
+
+4. to go inside the cluser:
+vagrant ssh yb-1
+. yb-env
+yb-admin -init_master_addrs=localhost:7100 list_all_masters
+
+
+notes, quesions:
+q1: port mappings needed to access from outside ?
+q2: management interface at 7100 ? 
+q3: add traceroute and other goodies to the template box
+q4: 
+
+
+tips:
+
+tip 1: write docu, write howto
+
+tip 2: open browser-interface to.. (list of urls)
+
+tip 3: list gflags, and notable exceptions.
+
+
+
+-- -- -- 
+how to get flags, per node..
+
+curl node2:9000/varz?raw 
+
+
