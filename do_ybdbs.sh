@@ -22,7 +22,7 @@ echo .
 for portnr in $portlist
 do
 
-  ysqlsh -p $portnr -f do_ash.sql
+  ysqlsh -p $portnr -X -f do_ash.sql
 
 done
 
@@ -30,7 +30,6 @@ done
 echo .
 echo $0 : done all portnrs using $1 
 
-exit
 
 echo .
 echo do_all_clu.sh: 10 sec to Cntr-C .. or .. continue doing it slower forever...
@@ -43,26 +42,24 @@ while true
 do
 
   echo .
-  echo do_all: \[  $* \] ... 
+  echo do_ybdbs: \[  $* \] every 60 sec... 
   echo .
 
-  for node in  node2 node3 node4 node5 node6 node7 node8
+  # loop over the portnrs
+  for portnr in $portlist
   do
 
-    echo .
-    echo doing node $node :
-    docker exec -it $node $*
-
-    sleep 2 
+    ysqlsh -p $portnr -X -f do_ash.sql
 
   done
 
-  echo ----- do_all_clu.sh: loop over nodes done, next.. 
-  sleep 10
+  sleep 60
 
 done 
 
 # ----------------- end do_all_clu.sh -------------
+
+exit 
 
 echo .
 echo notes: code should never get this far.. but keep as notes

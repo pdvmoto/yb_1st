@@ -14,6 +14,8 @@ usage:
  - optional: have yb_init.sql done, to create helper-functions (cnt)
   
 todo:
+ - still duplicates in ash: wait-event-aux is sometimes only distinquiser..
+   revert to id as key !
  - function to collect-per-node, then call that function from each node.
    use GET DIAGNOSTICS integer_var = ROW_COUNT; to get+return rows: Done
  - add pg_stat_statement + activity: Done
@@ -56,7 +58,8 @@ $$ LANGUAGE sql;
 -- DROP TABLE public.ybx_pgs_stmt;
 
 CREATE TABLE public.ybx_ash (
-  id bigint GENERATED ALWAYS AS IDENTITY, -- PRIMARY KEY, -- find pk later
+  -- id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, -- too many fields
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	host text NULL,
 	sample_time timestamptz  NULL,
 	root_request_id uuid NULL,
@@ -71,7 +74,8 @@ CREATE TABLE public.ybx_ash (
 	wait_event_aux text NULL,
 	sample_weight float4 NULL,
 	wait_event_type text NULL
-, constraint ybx_ash_pk primary key ( host HASH, sample_time ASC, root_request_id ASC, rpc_request_id ASC, wait_event asc) 
+  --, constraint ybx_ash_pk primary key ( id ) 
+  --, constraint ybx_ash_pk primary key ( host HASH, sample_time ASC, root_request_id ASC, rpc_request_id ASC, wait_event asc) 
 ) 
 split into 1 tablets
 ;
