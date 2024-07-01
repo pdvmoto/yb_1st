@@ -1,26 +1,44 @@
 /*
-file: mk_ybash.sql: funcitons and tables for yb_ash and pg_stat data.
- - choose to store first + everywhere, take  insert- and select-rpc overhead..
- - useing sql-funciton for hostname
 
+file: mk_ybash.sql: functions and tables for yb_ash and pg_stat data.
+ - choose to store first + on every node, we take  insert- and select-rpc overhead..
+ - useing sql-funciton for detecting hostname
+
+usage:
+ - prepare for ash-usage, check yb_flags, check blogs.
+ - verify yb_active_session_history is present
+ - mk_ybash.sql: to create functions + tables, 
+   check for erros in case DDL changes
+ - test using do_ybash.sql : can all nodes collect data ?
+ - schedule for regular collection, e.g. 1min, 10min.
+ - optional: have yb_init.sql done, to create helper-functions (cnt)
+  
 todo:
  - function to collect-per-node, then call that function from each node.
-   use GET DIAGNOSTICS integer_var = ROW_COUNT; to get+return rows
- - add pg_stat_statement + activity: ok
- - Q: how to relate queryid to pg_stat_activity?
- - Q: relate session to pid ? 
+   use GET DIAGNOSTICS integer_var = ROW_COUNT; to get+return rows: Done
+ - add pg_stat_statement + activity: Done
+ - Q: how to relate queryid to pg_stat_activity, ask for enhancement ?
+ - Q: how to relate sessionid to pid ? 
+ - Q: Mechanism to run SQL on every node ? Scheduler? 
  - keep list of servers 
- - keep list of masters (how?)
- - add copy of view local_tablets
- - remove IDs when real keys are clear
+ - keep list of masters (how? needs ybtool or yb-admin ? and copy-stdout)
+ - add copy of view  yb_local_tablets 
+ - remove IDs when real keys are clear : Done
    (use ids to determine order in which data was generated?)
 
+future questions to answer:
+ - what is a good interval to measure ? (use argument in seonds or minutes?)
+ - busiest node in interval (e.g. 15min?)
+ - busiest table (or tablet) in interval 
+ - most occuring wait-event in interval
+ - can it detect xyz: locking? cpu-saturation, disk-saturation ? 
+ - can we draw a lock-tree ? over mutiple nodes ? at same timestamp?
+ - how to know if buffers are sufficient ? (e.g. not loose any samples)
 
 notes:
- - to use pgbench, initiate  : pgbench -i              -h localhost -p 5433 -U yugabyte yugabyte
-   and run pgbenh for 30sec  : pgbench -T 30 -j 2 -c 2 -h localhost -p 5433 -U yugabyte yugabyte
-
-more 
+ - to use pgbench, initiate and run pgbenh for 30sec  : 
+    pgbench -i              -h localhost -p 5433 -U yugabyte yugabyte
+    pgbench -T 30 -j 2 -c 2 -h localhost -p 5433 -U yugabyte yugabyte
 
 */ 
 
@@ -32,8 +50,6 @@ RETURNS TEXT AS $$
     FROM pg_settings
     WHERE name = 'listen_addresses';
 $$ LANGUAGE sql;
-
--- public.ybx_ash definition
 
 -- Drop table
 -- DROP TABLE public.ybx_ash;
@@ -528,14 +544,14 @@ $$
 -- call function and compare counts to test
 
 select 
-  cnt ('ybx_ash') ash
-, cnt ('ybx_pgs_stmt') stmts
-, cnt ('ybx_pgs_act') activity ;
+  (select count (*) ash   from ybx_ash      ) ash
+, (select count (*) stmts from ybx_pgs_stmt ) stmts
+, (select count (*) activ from ybx_pgs_act  ) activ ;
  
 select ybx_get_ash () collect_function_called; 
 
 select 
-  cnt ('ybx_ash') ash
-, cnt ('ybx_pgs_stmt') stmts
-, cnt ('ybx_pgs_act') activity ;
-
+  (select count (*) ash   from ybx_ash      ) ash
+, (select count (*) stmts from ybx_pgs_stmt ) stmts
+, (select count (*) activ from ybx_pgs_act  ) activ ;
+ 
