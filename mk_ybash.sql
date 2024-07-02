@@ -6,7 +6,7 @@ file: mk_ybash.sql: functions and tables for yb_ash and pg_stat data.
 
 usage:
  - prepare for ash-usage, check yb_flags, check blogs.
- - verify yb_active_session_history is present
+ - verify the view yb_active_session_history is present
  - mk_ybash.sql: to create functions + tables, 
    check for erros in case DDL changes
  - test using do_ybash.sql : can all nodes collect data ?
@@ -27,6 +27,8 @@ todo:
  - add copy of view  yb_local_tablets 
  - remove IDs when real keys are clear : Done
    (use ids to determine order in which data was generated?)
+ - Q: should we introcude a snap_id (snapshot) 
+   to link related data to 1 event or 1 point-in-time ?
 
 future questions to answer:
  - what is a good interval to measure ? (use argument in seonds or minutes?)
