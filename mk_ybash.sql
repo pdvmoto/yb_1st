@@ -14,6 +14,7 @@ usage:
  - optional: have yb_init.sql done, to create helper-functions (cnt)
   
 todo:
+ - Schedule collection, say 5min loops
  - still duplicates in ash: wait-event-aux is sometimes only distinquiser..
    revert to id as key !
  - function to collect-per-node, then call that function from each node.
@@ -24,7 +25,8 @@ todo:
  - Q: Mechanism to run SQL on every node ? Scheduler? 
  - keep list of servers 
  - keep list of masters (how? needs ybtool or yb-admin ? and copy-stdout)
- - add copy of view  yb_local_tablets 
+ - add copy of view  yb_local_tablets - Separate SCript!
+ - use dflts for host and timestamp in DDL?
  - remove IDs when real keys are clear : Done
    (use ids to determine order in which data was generated?)
  - Q: should we introcude a snap_id (snapshot) 
@@ -159,6 +161,29 @@ CREATE TABLE public.ybx_pgs_act (
 )
 split into 1 tablets ;
 
+
+-- collect tablet info...
+-- public.ybx_tblt definition
+
+-- Drop table
+
+-- DROP TABLE public.ybx_tblt;
+
+CREATE TABLE public.ybx_tblt (
+  id bigint GENERATED ALWAYS AS IDENTITY primary key, -- find pk later
+  host text not null,
+  sample_time timestamptz not null, /* not same as ash-sampletime.. */ 
+  gone_time timestamptz,            /* use to signal absence */
+	tablet_id text NULL,
+	table_id text NULL,
+	table_type text NULL,
+	namespace_name text NULL,
+	ysql_schema_name text NULL,
+	table_name text NULL,
+	partition_key_start bytea NULL,
+	partition_key_end bytea NULL
+)
+split into 1 tablets ;
 
 -- collect data...  -- -- --
 
@@ -339,8 +364,54 @@ from pg_stat_activity a, h h ;
 select host, count (*) from ybx_pgs_act group by host order by host ;
 
 
+-- collect local_tablets, move to separate function and script later.
 
-/*
+with h as ( select get_host () as host ) 
+insert into ybx_tblt (
+  skip-smtnt,
+  host ,
+  sample_time ,
+  gone_time , 
+	tablet_id ,
+	table_id ,
+	table_type ,
+	namespace_name ,
+	ysql_schema_name ,
+	table_name ,
+	partition_key_start ,
+	partition_key_end 
+)
+select 
+  h.host ,
+  now() ,
+  null , -- update gone_time when no longer found 
+	tablet_id ,
+	table_id ,
+	table_type ,
+	namespace_name ,
+	ysql_schema_name ,
+	table_name ,
+	partition_key_start ,
+	partition_key_end 
+from yb_local_tablets t, h h 
+where not exists (
+  select 'x' from ybx_tblt u
+  where h.host = u.host
+  and   t.tablet_id = u.tablet_id
+  and   u.sample_time is null  -- catch moving + returning tablets 
+  ) ; 
+
+-- signal if tblt no longer on this host.
+with h as ( select get_host () as host )
+update ybx_tblt t set gone_time = now ()
+, skip_stmnt
+where not exists ( 
+  select 'x' from yb_local_tablets l, h h
+  where h.host = t.host
+  and   l.tablet_id = t.tablet_id
+  ) ;
+
+/* *****************************************************************
 
 function : ybx_get_ash();
 
@@ -348,8 +419,6 @@ collect ash + pg_stat_stmnts + pg_stat_activity for current node
 returns total nr of records
 
 */ 
-
--- function 
 
 CREATE OR REPLACE FUNCTION ybx_get_ash()
   RETURNS bigint
@@ -359,8 +428,6 @@ DECLARE
   nr_rec_processed bigint := 0 ;
   retval bigint := 0 ;
 BEGIN
-
--- collect data...  -- -- --
 
 -- much faster using with clause ?
 with h as ( select get_host () as host ) 
@@ -543,11 +610,103 @@ retval := retval + nr_rec_processed ;
   -- end of fucntion..
   return retval ;
 
-END;
+END; -- get_ash, to incrementally populate table
 $$
 ;
 
--- call function and compare counts to test
+
+/*
+
+function : get_tablets();
+
+collect ybx_tblt with local tablets, local to current node
+returns total nr of records inserted and updated
+
+*/
+
+CREATE OR REPLACE FUNCTION get_tablets()
+  RETURNS bigint
+  LANGUAGE plpgsql
+AS $$
+DECLARE
+  nr_rec_processed bigint := 0 ;
+  retval bigint := 0 ;
+BEGIN
+
+-- insert any new-found tablets on this node...
+with h as ( select get_host () as host )
+insert into ybx_tblt (
+  host ,
+  sample_time ,
+  gone_time ,
+  tablet_id ,
+  table_id ,
+  table_type ,
+  namespace_name ,
+  ysql_schema_name ,
+  table_name ,
+  partition_key_start ,
+  partition_key_end
+)
+select
+  h.host ,
+  now() ,
+  null , -- update gone_time when no longer found 
+  tablet_id ,
+  table_id ,
+  table_type ,
+  namespace_name ,
+  ysql_schema_name ,
+  table_name ,
+  partition_key_start ,
+  partition_key_end
+from yb_local_tablets t, h h
+where not exists (
+  select 'x' from ybx_tblt u
+  where h.host      =  u.host
+  and   t.tablet_id =  u.tablet_id
+  and   u.gone_time is null  --  catch moving + returning tablets 
+  ) ;
+
+GET DIAGNOSTICS nr_rec_processed := ROW_COUNT;
+retval := retval + nr_rec_processed ;
+RAISE NOTICE 'get_tblts() created : % tblts' , nr_rec_processed ; 
+
+-- update the gone_date if tablet no longer present..
+-- signal gone_date if ... gone
+with h as ( select get_host () as host )
+update ybx_tblt t set gone_time = now () 
+where 1=1 
+and   t.gone_time  is null
+and not exists (
+  select 'x' from yb_local_tablets l, h h
+  where   t.tablet_id  =  l.tablet_id 
+  and     t.host = h.host)
+;
+
+/*
+ where not exists (
+  select 'x' from yb_local_tablets l, h h
+  where t.host       =  h.host
+  and   t.tablet_id  =  l.tablet_id
+  and   t.gone_time  is null 
+  ) ;
+*/ 
+
+GET DIAGNOSTICS nr_rec_processed := ROW_COUNT;
+retval := retval + nr_rec_processed ;
+RAISE NOTICE 'get_tblts() gone : % tblts' , nr_rec_processed ; 
+
+  -- end of fucntion..
+  return retval ;
+
+END; -- function get_tblts: to get_tablets
+$$
+;
+
+
+
+-- call functions and compare counts to test
 
 select 
   (select count (*) ash   from ybx_ash      ) ash
@@ -561,3 +720,10 @@ select
 , (select count (*) stmts from ybx_pgs_stmt ) stmts
 , (select count (*) activ from ybx_pgs_act  ) activ ;
  
+-- and tablets..
+select count (*) tablets_detected, host from ybx_tblt group by host ;
+
+select get_tablets () as nr_tablets_processed ;
+
+select count (*) tablets_detected, host from ybx_tblt group by host ;
+
