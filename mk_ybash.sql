@@ -46,6 +46,10 @@ notes:
     pgbench -i              -h localhost -p 5433 -U yugabyte yugabyte
     pgbench -T 30 -j 2 -c 2 -h localhost -p 5433 -U yugabyte yugabyte
 
+ - to use ysql_bench, initiate and run pgbenh for 30sec  : 
+    /home/yugabyte/postgres/bin/ysql_bench -i              -h localhost -p 5433 -U yugabyte yugabyte
+    /home/yugabyte/postgres/bin/ysql_bench -T 30 -j 2 -c 2 -h localhost -p 5433 -U yugabyte yugabyte
+
 */ 
 
 -- need function to get hostname
@@ -405,7 +409,7 @@ where not exists (
 with h as ( select get_host () as host )
 update ybx_tblt t set gone_time = now ()
 , skip_stmnt
-where not exists ( 
+where not exists (  -- skip
   select 'x' from yb_local_tablets l, h h
   where h.host = t.host
   and   l.tablet_id = t.tablet_id
@@ -677,11 +681,12 @@ RAISE NOTICE 'get_tblts() created : % tblts' , nr_rec_processed ;
 with h as ( select get_host () as host )
 update ybx_tblt t set gone_time = now () 
 where 1=1 
-and   t.gone_time  is null
-and not exists (
-  select 'x' from yb_local_tablets l, h h
+and   t.gone_time  is null                   -- no end time yet
+and   t.host       in ( select host from h ) -- same host
+and not exists (                             -- no more local tblt
+  select 'x' from yb_local_tablets l
   where   t.tablet_id  =  l.tablet_id 
-  and     t.host = h.host)
+  )
 ;
 
 /*
