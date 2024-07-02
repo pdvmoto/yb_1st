@@ -21,6 +21,7 @@ todo:
  - function to collect-per-node, then call that function from each node.
    use GET DIAGNOSTICS integer_var = ROW_COUNT; to get+return rows: Done
  - add pg_stat_statement + activity: Done
+ - types: tservers().uuid is txt, top-level is uuid.. mix of types
  - pg_stat_statemet; could use a timestamp of "date-time found"
  - Q: how to relate queryid to pg_stat_activity, ask for enhancement ?
  - Q: how to relate sessionid to pid ? 
@@ -44,13 +45,14 @@ future questions to answer:
  - how to know if buffers are sufficient ? (e.g. not loose any samples)
 
 notes:
- - to use pgbench, initiate and run pgbenh for 30sec  : 
+ - to use pg, initiate and run pgbenh for 30sec  : 
     pgbench -i              -h localhost -p 5433 -U yugabyte yugabyte
     pgbench -T 30 -j 2 -c 2 -h localhost -p 5433 -U yugabyte yugabyte
 
  - to use ysql_bench, initiate and run pgbenh for 30sec  : 
     /home/yugabyte/postgres/bin/ysql_bench -i              -h localhost -p 5433 -U yugabyte yugabyte
     /home/yugabyte/postgres/bin/ysql_bench -T 30 -j 2 -c 2 -h localhost -p 5433 -U yugabyte yugabyte
+    /home/yugabyte/postgres/bin/ysql_bench -T 30 -j 2 -c 2 -h \`hostname\` -U yugabyte yugabyte
 
 */ 
 

@@ -6,8 +6,7 @@
 #   nohup ./do_ashloop.sh & 
 # 
 # verify running with : 
-#    select host, min(sample_time) earliest_sample, max(sample_time) latest_sample  
-#    from ybx_ash group by host order by 3 desc ;
+#    select host, min(sample_time) earliest_sample, max(sample_time) latest_sample from ybx_ash group by host order by 3 desc ;
 #
 # todo:
 #   - configur nr seconds as parameter, dflt 300
