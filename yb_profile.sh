@@ -22,3 +22,6 @@ alias   ybtbts='yb-admin -master_addresses $MASTERS list_tablets '
 
 alias      ybt='yugatool -m $MASTERS '
 
+# set to bxlls timezone
+TZ='Europe/Brussels'; export TZ
+

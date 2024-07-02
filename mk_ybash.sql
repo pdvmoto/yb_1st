@@ -14,12 +14,14 @@ usage:
  - optional: have yb_init.sql done, to create helper-functions (cnt)
   
 todo:
- - Schedule collection, say 5min loops
+ - Schedule collection, say 5min loops: do_ashloop.sh seems to work. test.
+ - consider adding loop to create-db script 
  - still duplicates in ash: wait-event-aux is sometimes only distinquiser..
    revert to id as key !
  - function to collect-per-node, then call that function from each node.
    use GET DIAGNOSTICS integer_var = ROW_COUNT; to get+return rows: Done
  - add pg_stat_statement + activity: Done
+ - pg_stat_statemet; could use a timestamp of "date-time found"
  - Q: how to relate queryid to pg_stat_activity, ask for enhancement ?
  - Q: how to relate sessionid to pid ? 
  - Q: Mechanism to run SQL on every node ? Scheduler? 
@@ -61,12 +63,13 @@ RETURNS TEXT AS $$
     WHERE name = 'listen_addresses';
 $$ LANGUAGE sql;
 
--- Drop table
--- DROP TABLE public.ybx_ash;
--- DROP TABLE public.ybx_pgs_stmt;
+/*  Drop tables
+  DROP TABLE public.ybx_ash;
+  DROP TABLE public.ybx_pgs_stmt;
+  DROP TABLE public.ybx_tblt;
+*/
 
 CREATE TABLE public.ybx_ash (
-  -- id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, -- too many fields
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	host text NULL,
 	sample_time timestamptz  NULL,
@@ -90,8 +93,6 @@ split into 1 tablets
 
 -- create index ybx_ash_dt on ybx_ash ( sample_time ASC, root_request_id, rpc_request_id ); 
 
--- statements
--- public.ybx_pgs_stmt definition
 
 -- DROP TABLE public.ybx_pgs_stmt;
 
@@ -167,17 +168,14 @@ split into 1 tablets ;
 
 
 -- collect tablet info...
--- public.ybx_tblt definition
-
--- Drop table
 
 -- DROP TABLE public.ybx_tblt;
 
 CREATE TABLE public.ybx_tblt (
   id bigint GENERATED ALWAYS AS IDENTITY primary key, -- find pk later
   host text not null,
-  sample_time timestamptz not null, /* not same as ash-sampletime.. */ 
-  gone_time timestamptz,            /* use to signal absence */
+  sample_time timestamptz not null, -- not same as ash-sampletime 
+  gone_time timestamptz,            -- use to signal removal 
 	tablet_id text NULL,
 	table_id text NULL,
 	table_type text NULL,
@@ -189,8 +187,9 @@ CREATE TABLE public.ybx_tblt (
 )
 split into 1 tablets ;
 
--- collect data...  -- -- --
+/* ******** collection of data via inserts.. moved to functions ****
 
+-- collect data...  -- -- --
 
 -- much faster using with clause ?
 with h as ( select get_host () as host ) 
@@ -233,10 +232,6 @@ where not exists ( select 'x' from ybx_ash b
                    and   b.rpc_request_id  = coalesce ( a.rpc_request_id, 0 )
                    and   b.wait_event      = a.wait_event
                  );
-
-select host, count (*) from  ybx_ash group by host order by host ;
-
-\d ybx_ash
 
 -- now collect pg_stat_stmnts (and activity )
 with h as ( select get_host () as host )
@@ -365,9 +360,6 @@ select
 from pg_stat_activity a, h h ;
 -- no where clause at all ?
 
-select host, count (*) from ybx_pgs_act group by host order by host ;
-
-
 -- collect local_tablets, move to separate function and script later.
 
 with h as ( select get_host () as host ) 
@@ -414,6 +406,9 @@ where not exists (  -- skip
   where h.host = t.host
   and   l.tablet_id = t.tablet_id
   ) ;
+
+*/
+
 
 /* *****************************************************************
 
@@ -688,15 +683,6 @@ and not exists (                             -- no more local tblt
   where   t.tablet_id  =  l.tablet_id 
   )
 ;
-
-/*
- where not exists (
-  select 'x' from yb_local_tablets l, h h
-  where t.host       =  h.host
-  and   t.tablet_id  =  l.tablet_id
-  and   t.gone_time  is null 
-  ) ;
-*/ 
 
 GET DIAGNOSTICS nr_rec_processed := ROW_COUNT;
 retval := retval + nr_rec_processed ;

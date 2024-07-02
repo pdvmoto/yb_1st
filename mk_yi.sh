@@ -64,7 +64,7 @@ sleep 2
 #
 
 # nodenrs="2 3 4 5 6 7 8"
-nodenrs="2 3 4"
+nodenrs="2 3 4 5 "
 
 # create nodes, platform, install tools, but no db yet...
 for nodenr in $nodenrs
@@ -124,9 +124,13 @@ do
   echo $node : adding ybflags.conf
   docker cp ybflags.conf $hname:/home/yugabyte/
 
-  echo $node : adding psg....
+  echo $node : adding psg ...
   docker cp `which psg` $hname:/usr/local/bin/psg
   docker exec -it $hname chmod 755 /usr/local/bin/psg
+
+  echo $node : adding do_ashloop.sh ...
+  docker cp do_ashloop.sh $hname:/usr/local/bin/do_ashloop.sh
+  docker exec -it $hname chmod 755 /usr/local/bin/do_ashloop.sh
 
   # more tooling... make sure the files are in working dir
 
