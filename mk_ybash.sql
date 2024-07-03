@@ -5,22 +5,19 @@ file: mk_ybash.sql: functions and tables for yb_ash and pg_stat data.
  - useing sql-funciton for detecting hostname
 
 usage:
- - prepare for ash-usage, check yb_flags, check blogs.
+ - prepare for ash-usage, include yb_flags, check blogs.
  - verify the view yb_active_session_history is present
- - mk_ybash.sql: to create functions + tables, 
+ - run script \i mk_ybash.sql: to create functions + tables, 
    check for erros in case DDL changes
  - test using do_ybash.sql : can all nodes collect data ?
- - schedule for regular collection, e.g. 1min, 10min.
- - optional: have yb_init.sql done, to create helper-functions (cnt)
-  
+ - schedule for regular collection, e.g. 1min, 10min.: do_ashloop.sh
+ - optional: check to have yb_init.sql done, reate helper-functions (cnt)
+ 
 todo:
- - Schedule collection, say 5min loops: do_ashloop.sh seems to work. test.
- - consider adding loop to create-db script 
+ - consider adding nohup-loop to create-db script 
+ - test on colocated db: only 1 tablet, and 1 table-name. complicated..? 
  - still duplicates in ash: wait-event-aux is sometimes only distinquiser..
    revert to id as key !
- - function to collect-per-node, then call that function from each node.
-   use GET DIAGNOSTICS integer_var = ROW_COUNT; to get+return rows: Done
- - add pg_stat_statement + activity: Done
  - types: tservers().uuid is txt, top-level is uuid.. mix of types
  - pg_stat_statemet; could use a timestamp of "date-time found"
  - Q: how to relate queryid to pg_stat_activity, ask for enhancement ?
@@ -29,11 +26,19 @@ todo:
  - keep list of servers 
  - keep list of masters (how? needs ybtool or yb-admin ? and copy-stdout)
  - add copy of view  yb_local_tablets - Separate SCript!
+ - detect migration + close tablets from dead or dissapeared nodes. how ???
  - use dflts for host and timestamp in DDL?
- - remove IDs when real keys are clear : Done
-   (use ids to determine order in which data was generated?)
  - Q: should we introcude a snap_id (snapshot) 
    to link related data to 1 event or 1 point-in-time ?
+
+items done:
+ - Schedule collection, say 5min loops: do_ashloop.sh seems to work. test.
+ - function to collect-per-node, then call that function from each node.
+   use GET DIAGNOSTICS integer_var = ROW_COUNT; to get+return rows: Done
+ - add pg_stat_statement + activity: Done
+ - remove IDs when real keys are clear : Done
+   (use ids to determine order in which data was generated?)
+
 
 future questions to answer:
  - what is a good interval to measure ? (use argument in seonds or minutes?)

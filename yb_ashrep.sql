@@ -2,6 +2,17 @@
 
 file : yb_ashrep: report the top-events from ash.
 
+notes:
+ - it is a SAMPLE.. not a stopwatch-timer.
+
+todo:
+ - think of graphic visual, how to display...
+ - get meaning of wait-events.
+ - capacity : list of "idle" events, e.g. not consuming thread or cpu on server
+ - network: how to measure ?
+ - link aux to table
+ - add top-request, + link to SQL
+
 */
 
 
@@ -70,3 +81,78 @@ group by wait_event_class, wait_event_type, wait_event, wait_event_aux, host
 order by 1 desc 
 limit 20;
 
+\! echo next some aggregates over total ash-table
+\! read -t 10 -p "next are sum-samples per class, per type, per aux..." abc
+
+
+select count (*), a.wait_event_type
+from ybx_ash a
+-- where wait_event_component not in ('YCQL') 
+group by  a.wait_event_type
+order by 1 desc ; 
+
+select count (*), a.host, a.wait_event_type
+from ybx_ash a
+-- where wait_event_component not in ('YCQL') 
+group by  a.host, a.wait_event_type
+order by a.host, 1 desc ;
+
+
+select count (*), a.wait_event_component
+from ybx_ash a
+-- where wait_event_component not in ('YCQL') 
+group by a.wait_event_component 
+order by 1 desc ; 
+
+select count (*), a.host, a.wait_event_component
+from ybx_ash a
+-- where wait_event_component not in ('YCQL') 
+group by a.host, a.wait_event_component 
+order by a.host, 1 desc ; 
+
+
+select count (*), a.wait_event_class 
+from ybx_ash a
+--where wait_event_component not in ('YCQL') 
+group by a.wait_event_class 
+order by 1 desc ; 
+
+select count (*), a.host, a.wait_event_class 
+from ybx_ash a
+--where wait_event_component not in ('YCQL') 
+group by a.host, a.wait_event_class 
+order by a.host, 1 desc ; 
+
+select count (*), a.wait_event 
+from ybx_ash a
+--where wait_event_component not in ('YCQL') 
+group by a.wait_event 
+order by 1 desc ; 
+
+select count (*), a.host, a.wait_event 
+from ybx_ash a
+--where wait_event_component not in ('YCQL') 
+group by a.host, a.wait_event 
+order by a.host, 1 desc ; 
+
+select count (*), a.wait_event_aux, yt.table_name
+from ybx_ash a
+   , ybx_tblt yt 
+where 1=1
+and substr ( yt.tablet_id, 1, 15) = a.wait_event_aux  
+and wait_event_aux is not null
+-- and wait_event_component not in ('YCQL')
+group by a.wait_event_aux, yt.table_name 
+order by 1 desc 
+limit 20 ;
+
+select count (*), a.host, a.wait_event_aux, yt.ysql_schema_name, yt.table_name
+from ybx_ash a
+   , ybx_tblt yt 
+where 1=1
+and substr ( yt.tablet_id, 1, 15) = a.wait_event_aux  
+and wait_event_aux is not null
+-- and wait_event_component not in ('YCQL')
+group by a.host, a.wait_event_aux, yt.ysql_schema_name, yt.table_name 
+order by a.host, 1 desc 
+limit 40 ;
