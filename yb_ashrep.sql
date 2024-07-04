@@ -156,3 +156,19 @@ and wait_event_aux is not null
 group by a.host, a.wait_event_aux, yt.ysql_schema_name, yt.table_name 
 order by a.host, 1 desc 
 limit 40 ;
+
+
+\! read -t 10 -p "next checking top-level node-ids aux..." abc
+
+select count (*), a.top_level_node_id
+from ybx_ash a
+--where wait_event_component not in ('YCQL') 
+group by a.top_level_node_id
+order by 1 desc ; 
+
+
+select count (*), a.top_level_node_id, a.host
+from ybx_ash a
+--where wait_event_component not in ('YCQL') 
+group by a.top_level_node_id, a.host
+order by a.host, 1 desc ; 

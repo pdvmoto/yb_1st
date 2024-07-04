@@ -23,13 +23,15 @@ todo:
  - Q: how to relate queryid to pg_stat_activity, ask for enhancement ?
  - Q: how to relate sessionid to pid ? 
  - Q: Mechanism to run SQL on every node ? Scheduler? 
- - keep list of servers 
+ - keep list of servers, detect when server is down? - scrape from ybadmin?
  - keep list of masters (how? needs ybtool or yb-admin ? and copy-stdout)
- - add copy of view  yb_local_tablets - Separate SCript!
- - detect migration + close tablets from dead or dissapeared nodes. how ???
+ - add copy of view  yb_local_tablets - ok, move to Separate SCript!
+ - Q: detect migrated + dropped tablets, and dissapeared nodes. how ???
  - use dflts for host and timestamp in DDL?
  - Q: should we introcude a snap_id (snapshot) 
    to link related data to 1 event or 1 point-in-time ?
+ - ashrep.sql : use script with nr-seconds to list top-events?
+ - need a repeatable "load generator", notaby IO-write and IO-read.
 
 items done:
  - Schedule collection, say 5min loops: do_ashloop.sh seems to work. test.
