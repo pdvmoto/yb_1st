@@ -5,6 +5,10 @@ file : yb_ashrep: report the top-events from ash.
 notes:
  - it is a SAMPLE.. not a stopwatch-timer.
 
+dependencies:
+ - mk_ybash.sql: create supporting objects, run on 1 node
+ - mk_ashvws.sql: create gv$ (from Franck), run on 1 node
+
 todo:
  - think of graphic visual, how to display...
  - get meaning of wait-events.
@@ -15,9 +19,42 @@ todo:
 
 */
 
+select 'ash from memory contents, local and global' as first_check ; 
+
+select count (*) total_in_buff, min (sample_time) oldest_in_buff, max(sample_time) latest_in_buff
+from yb_active_session_history ;
+
+select count (*) total_in_buff, min (sample_time) oldest_in_buff, max(sample_time) latest_in_buff
+from gv$yb_active_session_history ;
+
+select count (*) total_in_buff,  min (sample_time) oldest_in_buff, max(sample_time) latest_in_buff, gv$host
+from gv$yb_active_session_history 
+group by gv$host 
+order by 1 desc;
+
+\echo .
+\! read -t 10 -p "above: check if any data present in local and gv views... " abc
+\echo .
+\echo .
+
+select 'ash data stored in DB, global on all nodes... ' as second_check ; 
+
+select count (*) total_records, min (sample_time) oldest_rec, max(sample_time) latest_rec
+from ybx_ash ;
+
+select count (*) total_records, min (sample_time) oldest_rec, max(sample_time) latest_rec, host
+from ybx_ash 
+group by host
+order by 1;
+
+\echo .
+\! read -t 10 -p "above: check data stored in ash-table(s), per hosts... " abc
+\echo .
+\echo .
+
 
 -- busiest nodes
-with cutoff as ( select now() - interval '900 seconds' as sincedt ) 
+with cutoff as ( select now() - make_interval (secs => 900)  as sincedt ) 
 select count (*) cnt, sincedt, host as busiest
 from ybx_ash ya
    , cutoff c 

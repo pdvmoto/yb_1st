@@ -10,18 +10,21 @@
 #
 # todo:
 #   - configur nr seconds as parameter, dflt 300
-#   - test sleep-pg vs sleep-linux, consume a pg-process, but give sleep-wait ? 
+#   - test sleep-pg vs sleep-linux, consume a pg-process, detect sleep-wait ? 
 #   - configure for credentials ? 
+#   - add detection of new event where not exist in ybx_ash_eventlist
 #
 
 while true 
 do
 
   date "+%Y-%m-%dT%H:%M:%S do_ashloop.sh: running on host $HOSTNAME ..."
-
+  
   ysqlsh -h $HOSTNAME -X <<EOF
+    \timing
     select ybx_get_ash () ;
     select get_tablets () ;
+    select ybx_get_waiteventlist() as added_events;
 
 EOF
   

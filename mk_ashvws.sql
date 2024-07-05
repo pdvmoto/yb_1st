@@ -2,6 +2,11 @@
 /*
 
 mk_ashvws: copied from Franck, create gv$ for use of yb-ash
+
+additional: 
+ - collect names of all events, 
+ - function to check list of events
+
 */
 
 
@@ -101,6 +106,7 @@ group by
 order by 1 desc
 ;
 $$ language sql;
+
 select * from gv$ash();
 
 -- The user and password are hardcoded here (yugabyte), but you can create your own user mapping to each server.
@@ -108,9 +114,88 @@ select * from gv$ash();
 -- add a list of wait-events for lookup and comments
 create table ybx_ash_eventlist as 
 select distinct wait_event_component, wait_event_type, wait_event_class, wait_event, ' '::text as wait_event_notes
-from gv$ash ; 
+from gv$yb_active_session_history ; 
 
 -- pk seems to be:
-alter table ybx_ash_eventlist add constraint ybx_ash_eventlist_pk primary key ( wait_event_component, wait_event )
+alter table ybx_ash_eventlist add constraint ybx_ash_eventlist_pk primary key ( wait_event_component, wait_event ) ;
 
 
+-- later add events..
+-- synatx error ?
+with l as (
+  select distinct wait_event_component
+    , wait_event_type
+    , wait_event_class
+    , wait_event
+    , ' '::text as wait_event_notes
+  from gv$yb_active_session_history 
+)
+insert into ybx_ash_eventlist  
+select distinct wait_event_component
+    , wait_event_type
+    , wait_event_class
+    , wait_event
+    , wait_event_notes
+from l l
+where not exists ( select 'xyz' as xyz from ybx_ash_eventlist f
+                    where l.wait_event_component = f.wait_event_component
+                    and   l.wait_event           = f.wait_event
+);
+
+  
+/* *****************************************************************
+
+function : ybx_get_waiteventlist();
+
+collect all possible wait_event names (name + component)
+returns total nr of records added
+
+by running this function regularly, we hope to spot all events
+
+*/
+
+CREATE OR REPLACE FUNCTION ybx_get_waiteventlist()
+  RETURNS bigint
+  LANGUAGE plpgsql
+AS $$
+DECLARE
+  nr_rec_processed bigint := 0 ;
+  retval bigint := 0 ;
+  comment_txt text := 'Event found ' ;
+BEGIN
+
+  comment_txt := 'first found on node: ' || get_host () 
+                   || ', at: ' || now()::text ;
+
+with l as (
+  select distinct 
+    wait_event_component
+  , wait_event_type
+  , wait_event_class
+  , wait_event
+  , comment_txt as add_comment_txt
+  from gv$yb_active_session_history 
+)
+insert into ybx_ash_eventlist  
+select distinct 
+      wait_event_component
+    , wait_event_type
+    , wait_event_class
+    , wait_event
+    , add_comment_txt
+from l l
+where not exists ( select 'xzy' as xyz from ybx_ash_eventlist f
+                    where l.wait_event_component = f.wait_event_component
+                    and   l.wait_event           = f.wait_event
+);
+
+  
+  GET DIAGNOSTICS nr_rec_processed := ROW_COUNT;
+  retval := retval + nr_rec_processed ;
+  
+  -- end of fucntion..
+  return retval ;
+
+END; -- get_ash, to incrementally populate table
+$$
+; 

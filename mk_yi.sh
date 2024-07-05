@@ -134,12 +134,13 @@ do
 
   # more tooling... make sure the files are in working dir
 
-  echo $hname : adding yugatool ...
+  echo $hname : adding yugatool and enabling ysql_bench...
   docker cp yugatool.gz $hname:/home/yugabyte/bin
   cat <<EOF | docker exec -i $hname sh
     gunzip /home/yugabyte/bin/yugatool.gz
     chmod 755 /home/yugabyte/bin/yugatool
     ln -s /home/yugabyte/bin/yugatool /usr/local/bin/yugatool
+    ln -s /home/yugabyte/postgres/bin/ysql_bench /usr/local/bin/ysql_bench
 EOF
 
   # echo $hname : adding jq .... Why first 
