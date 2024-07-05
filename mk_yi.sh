@@ -128,6 +128,10 @@ do
   docker cp `which psg` $hname:/usr/local/bin/psg
   docker exec -it $hname chmod 755 /usr/local/bin/psg
 
+  echo $node : adding ff ...
+  docker cp `which ff` $hname:/usr/local/bin/ff
+  docker exec -it $hname chmod 755 /usr/local/bin/ff
+
   echo $node : adding do_ashloop.sh ...
   docker cp do_ashloop.sh $hname:/usr/local/bin/do_ashloop.sh
   docker exec -it $hname chmod 755 /usr/local/bin/do_ashloop.sh

@@ -14,24 +14,33 @@ usage:
  - optional: check to have yb_init.sql done, reate helper-functions (cnt)
  
 todo:
- - consider adding nohup-loop to create-db script 
  - test on colocated db: only 1 tablet, and 1 table-name. complicated..? 
  - still duplicates in ash: wait-event-aux is sometimes only distinquiser..
    revert to id as key !
  - types: tservers().uuid is txt, top-level is uuid.. mix of types
  - pg_stat_statemet; could use a timestamp of "date-time found"
+ - split get_ash() in  3 : ash, pg_stat_statments, and pg_stat_activity
  - Q: how to relate queryid to pg_stat_activity, ask for enhancement ?
  - Q: how to relate sessionid to pid ? 
  - Q: Mechanism to run SQL on every node ? Scheduler? 
  - keep list of servers, detect when server is down? - scrape from ybadmin?
  - keep list of masters (how? needs ybtool or yb-admin ? and copy-stdout)
- - add copy of view  yb_local_tablets - ok, move to Separate SCript!
+ - yb_local_tablets, to Separate SCript, and detect down-nodes/moved tblts
  - Q: detect migrated + dropped tablets, and dissapeared nodes. how ???
  - use dflts for host and timestamp in DDL?
  - Q: should we introcude a snap_id (snapshot) 
    to link related data to 1 event or 1 point-in-time ?
  - ashrep.sql : use script with nr-seconds to list top-events?
+ - eventlist: in do_ashrep.sql, Add regular detection of new event-names
  - need a repeatable "load generator", notaby IO-write and IO-read.
+ - collect new wait_events in do_ashloop, or similar place
+
+more todo
+ - get 1 benchmark, and test..
+ - standardize test-results: use script to report on cutoff-interval 
+ - compare with mapped volumes and local-docker volumes
+ - compare with more docker-rerouces: more cpus
+ - compare with smaller interval, say 100ms
 
 items done:
  - Schedule collection, say 5min loops: do_ashloop.sh seems to work. test.
@@ -40,6 +49,8 @@ items done:
  - add pg_stat_statement + activity: Done
  - remove IDs when real keys are clear : Done
    (use ids to determine order in which data was generated?)
+ - add copy of view  yb_local_tablets - ok, move to Separate SCript!
+ - adding nohup-loop to run ash-collection : do_ashloop.sh + start_ashloop.sh
 
 
 future questions to answer:
@@ -57,9 +68,8 @@ notes:
     pgbench -T 30 -j 2 -c 2 -h localhost -p 5433 -U yugabyte yugabyte
 
  - to use ysql_bench, initiate and run pgbenh for 30sec  : 
-    /home/yugabyte/postgres/bin/ysql_bench -i              -h localhost -p 5433 -U yugabyte yugabyte
-    /home/yugabyte/postgres/bin/ysql_bench -T 30 -j 2 -c 2 -h localhost -p 5433 -U yugabyte yugabyte
-    /home/yugabyte/postgres/bin/ysql_bench -T 30 -j 2 -c 2 -h \`hostname\` -U yugabyte yugabyte
+    /home/yugabyte/postgres/bin/ysql_bench -i              -h $HOSTNAME -p 5433 -U yugabyte yugabyte
+    /home/yugabyte/postgres/bin/ysql_bench -T 30 -j 2 -c 2 -h $HOSTNAME -U yugabyte yugabyte
 
 */ 
 
@@ -108,6 +118,7 @@ split into 1 tablets
 CREATE TABLE public.ybx_pgs_stmt (
   id bigint GENERATED ALWAYS AS IDENTITY, -- find pk later
   host text not null,
+  created_dt timestamptz default now(),
 	userid oid NULL,
 	dbid oid NULL,
 	queryid int8 NULL,
@@ -482,6 +493,8 @@ where not exists ( select 'x' from ybx_ash b
 GET DIAGNOSTICS nr_rec_processed := ROW_COUNT;
 retval := retval + nr_rec_processed ;
 
+RAISE NOTICE 'get_ash() yb_act_sess_hist : % ' , nr_rec_processed ; 
+
 -- now collect pg_stat_stmnts (and activity )
 with h as ( select get_host () as host )
 insert into ybx_pgs_stmt ( 
@@ -550,6 +563,7 @@ and not exists ( select 'x' from ybx_pgs_stmt y
 
 GET DIAGNOSTICS nr_rec_processed := ROW_COUNT;
 retval := retval + nr_rec_processed ;
+RAISE NOTICE 'get_ash() pg_stat_stmnts   : % ' , nr_rec_processed ; 
 
 -- collect acitivity..
 
@@ -614,6 +628,7 @@ from pg_stat_activity a, h h ;
 
 GET DIAGNOSTICS nr_rec_processed := ROW_COUNT;
 retval := retval + nr_rec_processed ;
+RAISE NOTICE 'get_ash() pg_stat_activity : % ' , nr_rec_processed ; 
 
   -- end of fucntion..
   return retval ;
@@ -695,7 +710,7 @@ and not exists (                             -- no more local tblt
 
 GET DIAGNOSTICS nr_rec_processed := ROW_COUNT;
 retval := retval + nr_rec_processed ;
-RAISE NOTICE 'get_tblts() gone : % tblts' , nr_rec_processed ; 
+RAISE NOTICE 'get_tblts() gone    : % tblts' , nr_rec_processed ; 
 
   -- end of fucntion..
   return retval ;

@@ -1,3 +1,6 @@
+
+\set n_sec 900.0
+
 /*
 
 file : yb_ashrep: report the top-events from ash.
@@ -16,6 +19,7 @@ todo:
  - network: how to measure ?
  - link aux to table
  - add top-request, + link to SQL
+ - top-event per interval, per minute if possible..
 
 */
 
@@ -54,12 +58,12 @@ order by 1;
 
 
 -- busiest nodes
-with cutoff as ( select now() - make_interval (secs => 900)  as sincedt ) 
+with cutoff as ( select now() - make_interval (secs => :n_sec )  as sincedt ) 
 select count (*) cnt, sincedt, host as busiest
 from ybx_ash ya
    , cutoff c 
 where ya.sample_time > c.sincedt
-group by sincedt, sincedt, host 
+group by sincedt, host 
 order by 1 desc 
 limit 10;
 
@@ -78,13 +82,18 @@ limit 10;
 
 -- busiest events class
 with cutoff as ( select now() - interval '900 seconds' as sincedt ) 
-select count (*) cnt, wait_event_class, host
+select count (*) cnt, sincedt, wait_event_class, host
 from ybx_ash ya
    , cutoff c 
 where ya.sample_time > c.sincedt
-group by wait_event_class, host
-order by 1 desc 
-limit 20;
+group by wait_event_class, sincedt, host
+order by 1 desc  
+limit 30;
+
+\echo .
+\! read -t 10 -p "above: top-event per hosts... " abc
+\echo .
+\echo .
 
 -- busiest events, type
 with cutoff as ( select now() - interval '900 seconds' as sincedt ) 
@@ -104,7 +113,7 @@ from ybx_ash ya
 where ya.sample_time > c.sincedt
 group by wait_event_class, wait_event_type, wait_event, host
 order by 1 desc 
-limit 20;
+limit 30;
 
 -- -- -- now check for busiest tablets..
 
@@ -114,19 +123,24 @@ from ybx_ash ya
    , cutoff c 
 where ya.sample_time > c.sincedt
   and ya.wait_event_aux is not null
-group by wait_event_class, wait_event_type, wait_event, wait_event_aux, host
+group by              wait_event_class, wait_event_type, wait_event, wait_event_aux, host
 order by 1 desc 
-limit 20;
+limit 30;
 
-\! echo next some aggregates over total ash-table
+\! echo above the busiest tablets per host.
+\! echo  next some aggregates over total ash-table
 \! read -t 10 -p "next are sum-samples per class, per type, per aux..." abc
 
 
 select count (*), a.wait_event_type
 from ybx_ash a
--- where wait_event_component not in ('YCQL') 
+where 1=1
+and wait_event_component not in ('YCQL') 
+and a.sample_time > ( now() - make_interval (secs => :n_sec ) ) 
 group by  a.wait_event_type
 order by 1 desc ; 
+
+\! read -t 10 -p "above the w-e types in last interval.." abc
 
 select count (*), a.host, a.wait_event_type
 from ybx_ash a
@@ -177,6 +191,7 @@ from ybx_ash a
    , ybx_tblt yt 
 where 1=1
 and substr ( yt.tablet_id, 1, 15) = a.wait_event_aux  
+and a.sample_time > ( now() - make_interval ( secs=>:n_sec ) )
 and wait_event_aux is not null
 -- and wait_event_component not in ('YCQL')
 group by a.wait_event_aux, yt.table_name 
@@ -188,6 +203,7 @@ from ybx_ash a
    , ybx_tblt yt 
 where 1=1
 and substr ( yt.tablet_id, 1, 15) = a.wait_event_aux  
+and a.sample_time > ( now() - make_interval ( secs=>:n_sec ) )
 and wait_event_aux is not null
 -- and wait_event_component not in ('YCQL')
 group by a.host, a.wait_event_aux, yt.ysql_schema_name, yt.table_name 
@@ -197,15 +213,15 @@ limit 40 ;
 
 \! read -t 10 -p "next checking top-level node-ids aux..." abc
 
-select count (*), a.top_level_node_id
+select  
+  to_char ( a.sample_time, 'DY HH24:MI') as dt, a.host 
+, count (*) samples
 from ybx_ash a
---where wait_event_component not in ('YCQL') 
-group by a.top_level_node_id
-order by 1 desc ; 
+where a.sample_time > ( now() - make_interval ( secs=>:n_sec ) )
+--and wait_event_component not in ('YCQL') 
+group by 
+  host, to_char ( a.sample_time, 'DY HH24:MI') 
+order by 2, 1  ; 
 
+\! read -t 10 -p "above, check per timeslot..." abc
 
-select count (*), a.top_level_node_id, a.host
-from ybx_ash a
---where wait_event_component not in ('YCQL') 
-group by a.top_level_node_id, a.host
-order by a.host, 1 desc ; 
