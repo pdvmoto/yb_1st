@@ -121,18 +121,18 @@ do
   docker cp ~/.psqlrc $hname:/tmp
   docker exec -it $hname sh -c "cp /tmp/.psqlrc /root/.psqlrc"
 
-  echo $node : adding ybflags.conf
+  echo $hname : adding ybflags.conf
   docker cp ybflags.conf $hname:/home/yugabyte/
 
-  echo $node : adding psg ...
+  echo $hname : adding psg ...
   docker cp `which psg` $hname:/usr/local/bin/psg
   docker exec -it $hname chmod 755 /usr/local/bin/psg
 
-  echo $node : adding ff ...
+  echo $hname : adding ff ...
   docker cp `which ff` $hname:/usr/local/bin/ff
   docker exec -it $hname chmod 755 /usr/local/bin/ff
 
-  echo $node : adding do_ashloop.sh ...
+  echo $hname : adding do_ashloop.sh ...
   docker cp do_ashloop.sh $hname:/usr/local/bin/do_ashloop.sh
   docker exec -it $hname chmod 755 /usr/local/bin/do_ashloop.sh
 
@@ -203,6 +203,10 @@ do
 
   echo command will be : ${startcmd}
 
+  echo $hname ... creating yugabyte instance:
+  echo $startcmd
+
+  echo $startcmd >> $LOGFILE
   ${startcmd}
 
   echo .
@@ -245,8 +249,11 @@ echo  - inspect dashboard : localhost:15433
 echo  - inspect node3:    : localhost:7003  and 9003, etc...
 echo . 
 echo . If so desired : 
-echo .    - complete config of nodes 2-8 using  ./do_profile.sh, loops over nodes!
+echo .    - [old] complete config of nodes 2-8 using  ./do_profile.sh, loops over nodes!
 echo .    - run yb_init.sql to load often-used functions.
+echo .    - run mk_ybash.sql to prepare ash-logging
+echo .    - activate do_ahsloop.sh on every node
+echo .    - run mk_ashvws.sql to prepare live-ash viewing via gv$
 echo .    - run demo_fill.sql to load demo-table t, and use it for checks/monitor.
 echo . 
 echo Have Fun.

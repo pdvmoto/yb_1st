@@ -196,6 +196,9 @@ where not exists ( select 'xzy' as xyz from ybx_ash_eventlist f
   -- end of fucntion..
   return retval ;
 
-END; -- get_ash, to incrementally populate table
+END; -- get_waiteventlist, to incrementally populate table
 $$
 ; 
+
+select ybx_get_waiteventlist() ; 
+

@@ -9,11 +9,14 @@
 #    select host, min(sample_time) earliest_sample, max(sample_time) latest_sample from ybx_ash group by host order by 3 desc ;
 #
 # todo:
-#   - configur nr seconds as parameter, dflt 300
+#   - configur nr seconds as parameter, 120sec seems ok for now, measure durations..
 #   - test sleep-pg vs sleep-linux, consume a pg-process, detect sleep-wait ? 
 #   - configure for credentials ? 
 #   - add detection of new event where not exist in ybx_ash_eventlist
 #
+
+# a bit quick, during benchmarkng, but set to 5 or 10min later
+n_secs=120
 
 while true 
 do
@@ -33,7 +36,7 @@ EOF
   date "+ %Y-%m-%dT%H:%M:%S do_ashloop.sh: sleeping on $HOSTNAME ..."
   echo .
 
-  sleep 300
+  sleep $n_secs
 
 done
 

@@ -1,5 +1,5 @@
 
-\set n_sec 900.0
+\set n_sec 3600.0
 
 /*
 
@@ -46,7 +46,11 @@ select 'ash data stored in DB, global on all nodes... ' as second_check ;
 select count (*) total_records, min (sample_time) oldest_rec, max(sample_time) latest_rec
 from ybx_ash ;
 
-select count (*) total_records, min (sample_time) oldest_rec, max(sample_time) latest_rec, host
+select count (*) total_records
+, min (sample_time) oldest_rec
+, max(sample_time) latest_rec
+, to_char (  age ( now (), max(sample_time) ), 'ssss' )  secs_ago
+, host
 from ybx_ash 
 group by host
 order by 1;
@@ -113,7 +117,7 @@ from ybx_ash ya
 where ya.sample_time > c.sincedt
 group by wait_event_class, wait_event_type, wait_event, host
 order by 1 desc 
-limit 30;
+limit 40;
 
 -- -- -- now check for busiest tablets..
 
@@ -213,6 +217,7 @@ limit 40 ;
 
 \! read -t 10 -p "next checking top-level node-ids aux..." abc
 
+
 select  
   to_char ( a.sample_time, 'DY HH24:MI') as dt, a.host 
 , count (*) samples
@@ -221,6 +226,16 @@ where a.sample_time > ( now() - make_interval ( secs=>:n_sec ) )
 --and wait_event_component not in ('YCQL') 
 group by 
   host, to_char ( a.sample_time, 'DY HH24:MI') 
+order by 2, 1  ; 
+
+select  
+  to_char ( a.sample_time, 'DDD DY HH24:00') as dt, a.host 
+, count (*) samples
+from ybx_ash a
+where 1=1 
+--and wait_event_component not in ('YCQL') 
+group by 
+  host, to_char ( a.sample_time, 'DDD DY HH24:00')
 order by 2, 1  ; 
 
 \! read -t 10 -p "above, check per timeslot..." abc

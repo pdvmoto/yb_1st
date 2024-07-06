@@ -14,6 +14,8 @@ usage:
  - optional: check to have yb_init.sql done, reate helper-functions (cnt)
  
 todo:
+ - add inteval + buffersizes to flagfile, but work with dflts.
+ - check TEST_ash flag.. try out ?
  - test on colocated db: only 1 tablet, and 1 table-name. complicated..? 
  - still duplicates in ash: wait-event-aux is sometimes only distinquiser..
    revert to id as key !
@@ -30,10 +32,10 @@ todo:
  - use dflts for host and timestamp in DDL?
  - Q: should we introcude a snap_id (snapshot) 
    to link related data to 1 event or 1 point-in-time ?
- - ashrep.sql : use script with nr-seconds to list top-events?
- - eventlist: in do_ashrep.sql, Add regular detection of new event-names
  - need a repeatable "load generator", notaby IO-write and IO-read.
+    mk_longt.sql? 
  - collect new wait_events in do_ashloop, or similar place
+ - script: wheris.sql: tablet or table, and list the nodes where..
 
 more todo
  - get 1 benchmark, and test..
@@ -41,6 +43,8 @@ more todo
  - compare with mapped volumes and local-docker volumes
  - compare with more docker-rerouces: more cpus
  - compare with smaller interval, say 100ms
+ - test with fresh-start cluster: clean memory ? 
+ - test with 1 or more nodes down + up. watch redistribution ?
 
 items done:
  - Schedule collection, say 5min loops: do_ashloop.sh seems to work. test.
@@ -51,6 +55,8 @@ items done:
    (use ids to determine order in which data was generated?)
  - add copy of view  yb_local_tablets - ok, move to Separate SCript!
  - adding nohup-loop to run ash-collection : do_ashloop.sh + start_ashloop.sh
+ - ashrep.sql : use script with nr-seconds to list top-events? : done
+ - eventlist: in do_ashrep.sql, Add regular detection of new event-names: done
 
 
 future questions to answer:
