@@ -252,7 +252,7 @@ echo . If so desired :
 echo .    - [old] complete config of nodes 2-8 using  ./do_profile.sh, loops over nodes!
 echo .    - run yb_init.sql to load often-used functions.
 echo .    - run mk_ybash.sql to prepare ash-logging
-echo .    - activate do_ahsloop.sh on every node
+echo .    - activate do_ahsloop.sh on every node (why no nohup from docker exec? )
 echo .    - run mk_ashvws.sql to prepare live-ash viewing via gv$
 echo .    - run demo_fill.sql to load demo-table t, and use it for checks/monitor.
 echo . 

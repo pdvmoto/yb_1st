@@ -2,6 +2,7 @@
 /*
 
 mk_ashvws: copied from Franck, create gv$ for use of yb-ash
+  note: not usin gv$ here, only query local ash, avoid errors when node down
 
 additional: 
  - collect names of all events, 
@@ -42,9 +43,10 @@ select format('
  ',host) from yb_servers();
 \gexec
 
+-- added activify, just adding here should be sufficient? 
 select format('
  import foreign schema "pg_catalog"
- limit to ("yb_active_session_history","pg_stat_statements")
+ limit to ("yb_active_session_history","pg_stat_statements", "pg_stat_activity")
  from server "gv$%1$s" into "gv$%1$s"
  ', host) from yb_servers();
 \gexec
@@ -174,7 +176,7 @@ with l as (
   , wait_event_class
   , wait_event
   , comment_txt as add_comment_txt
-  from gv$yb_active_session_history 
+  from yb_active_session_history 
 )
 insert into ybx_ash_eventlist  
 select distinct 

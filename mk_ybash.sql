@@ -13,14 +13,22 @@ usage:
  - schedule for regular collection, e.g. 1min, 10min.: do_ashloop.sh
  - optional: check to have yb_init.sql done, reate helper-functions (cnt)
  
+todo, high level.
+ - reports: find top-consumers
+ - reports: zoom in, tree, or hierarchy.. despite yb-claim..
+ - link ahs to activity, currently on query-text and sample-approx-time, not ideal
+ - link ash to pg_stat_statements with query_id
+ - save pg_stat_stmt + metrics (2 tables: stmnt_id, and id+metrics_in_interval)
+
 todo:
- - add inteval + buffersizes to flagfile, but work with dflts.
  - check TEST_ash flag.. try out ?
- - test on colocated db: only 1 tablet, and 1 table-name. complicated..? 
+ - test on colocated db: only 1 tablet, and 1 table-name. complicated..?  hmm
  - still duplicates in ash: wait-event-aux is sometimes only distinquiser..
    revert to id as key !
  - types: tservers().uuid is txt, top-level is uuid.. mix of types
- - pg_stat_statemet; could use a timestamp of "date-time found"
+ - pg_stat_statement: needs re-think. for exmpl, save every "interval" and reset
+ - pg_stat_statement; could use a timestamp of "date-time found"
+ - pg_stat_statement: consider merge with new stats every 10min ? 
  - split get_ash() in  3 : ash, pg_stat_statments, and pg_stat_activity
  - Q: how to relate queryid to pg_stat_activity, ask for enhancement ?
  - Q: how to relate sessionid to pid ? 
@@ -35,16 +43,23 @@ todo:
  - need a repeatable "load generator", notaby IO-write and IO-read.
     mk_longt.sql? 
  - collect new wait_events in do_ashloop, or similar place
- - script: wheris.sql: tablet or table, and list the nodes where..
+ - script: wheris.sql: tablet or table, and list the nodes where it is/was.
+ - script: yb_ash_int.sql: generate report for interval, define in top of file
+ - script: yb_ash_topsql.sql: list most found SQL., per count, per mem, per rows, per calls.
+ - t_long2.: insert a lot of data, generate long tx, long sql.
+ - collect mem per snapshot: sum (pg_stat_act)
+ - use count + interval of 'OnCpu_Passive' to find cpu-saturation? 
 
 more todo
- - get 1 benchmark, and test..
+ - get 1 benchmark, and test.., need tables of 2G or more to really hammer..
  - standardize test-results: use script to report on cutoff-interval 
  - compare with mapped volumes and local-docker volumes
- - compare with more docker-rerouces: more cpus
- - compare with smaller interval, say 100ms
+ - compare with more docker-rerouces: more cpus: not a success.
+ - compare with smaller interval, say 100ms: not on mac-docker, cpu loaded..
  - test with fresh-start cluster: clean memory ? 
  - test with 1 or more nodes down + up. watch redistribution ?
+ - Idle, ClientRead etc: make a list of Idle events
+ - log yb-admin masters and tservers
 
 items done:
  - Schedule collection, say 5min loops: do_ashloop.sh seems to work. test.
@@ -57,6 +72,7 @@ items done:
  - adding nohup-loop to run ash-collection : do_ashloop.sh + start_ashloop.sh
  - ashrep.sql : use script with nr-seconds to list top-events? : done
  - eventlist: in do_ashrep.sql, Add regular detection of new event-names: done
+ - parameters inteval + buffersizes to flagfile, but work with dflts.
 
 
 future questions to answer:
@@ -76,6 +92,8 @@ notes:
  - to use ysql_bench, initiate and run pgbenh for 30sec  : 
     /home/yugabyte/postgres/bin/ysql_bench -i              -h $HOSTNAME -p 5433 -U yugabyte yugabyte
     /home/yugabyte/postgres/bin/ysql_bench -T 30 -j 2 -c 2 -h $HOSTNAME -U yugabyte yugabyte
+
+ - try for a hierarchy, find top-stateent, and events below it..
 
 */ 
 

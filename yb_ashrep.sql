@@ -1,5 +1,5 @@
 
-\set n_sec 3600.0
+\set n_sec 36000.0
 
 /*
 
@@ -11,6 +11,10 @@ notes:
 dependencies:
  - mk_ybash.sql: create supporting objects, run on 1 node
  - mk_ashvws.sql: create gv$ (from Franck), run on 1 node
+
+todo, reporting...
+ - qry events from last 900 sec.. live. regardless of recording. LEARN
+ - generate function to create report - from tbls.
 
 todo:
  - think of graphic visual, how to display...
@@ -35,6 +39,8 @@ select count (*) total_in_buff,  min (sample_time) oldest_in_buff, max(sample_ti
 from gv$yb_active_session_history 
 group by gv$host 
 order by 1 desc;
+
+select host current_host, uuid from yb_servers () tsrv_uuid where public_ip in ( select get_host() ) ;
 
 \echo .
 \! read -t 10 -p "above: check if any data present in local and gv views... " abc
@@ -214,6 +220,21 @@ group by a.host, a.wait_event_aux, yt.ysql_schema_name, yt.table_name
 order by a.host, 1 desc 
 limit 40 ;
 
+\! read -t 10 -p "above: table_names, next checking top-level node-ids aux..." abc
+
+
+-- find top root_request, with most counts..
+-- note: clientRead seems to signify "at client", or "idle-at-client"
+select count (*)
+--, min (sample_time), max(sample_time)
+, ya.root_request_id top_root_req, ya.query_id top_qry
+from ybx_ash ya 
+where ya.root_request_id::text not like '000%'
+and ya.sample_time > ( now() - make_interval ( secs=>:n_sec ) )
+--and ya.root_request_id::text like 'd1dc9%'
+group by ya.root_request_id , ya.query_id
+order by 1 desc 
+limit 20;
 
 \! read -t 10 -p "next checking top-level node-ids aux..." abc
 
@@ -228,15 +249,50 @@ group by
   host, to_char ( a.sample_time, 'DY HH24:MI') 
 order by 2, 1  ; 
 
+with cutoff as ( select now() - make_interval (secs => :n_sec )  as sincedt ) 
 select  
   to_char ( a.sample_time, 'DDD DY HH24:00') as dt, a.host 
 , count (*) samples
 from ybx_ash a
+   , cutoff c
 where 1=1 
 --and wait_event_component not in ('YCQL') 
+and a.sample_time > c.sincedt
 group by 
   host, to_char ( a.sample_time, 'DDD DY HH24:00')
 order by 2, 1  ; 
 
+with cutoff as ( select now() - make_interval (secs => :n_sec )  as sincedt ) 
+select  
+  to_char ( a.sample_time, 'D DY HH24:MI DDD') as dt
+  --, a.host
+, count (*) samples_cpu_passive
+from ybx_ash a
+   , cutoff c
+where 1=1 
+--and wait_event_component not in ('YCQL')
+and a.wait_event = 'OnCpu_Passive'
+and a.sample_time > c.sincedt
+group by 
+  --host, 
+  to_char ( a.sample_time, 'D DY HH24:MI DDD')
+  having count(*) > 4
+order by 1 desc , 2 ; 
+ 
 \! read -t 10 -p "above, check per timeslot..." abc
+
+-- this seems to work..
+select count (*) , ash.client_node_ip, psa.application_name , psa.query
+from ybx_ash ash  
+ --gv$yb_active_session_history  ash
+ , ybx_pgs_act psa
+--ybx_ash ash
+ where 1=1 
+ and ash.client_node_ip = host (psa.client_addr) || ':' || psa.client_port
+ and psa.state ='active'
+and query not like '%get_ash%'
+ and age ( now(), ash.sample_time ) < interval '7200 seconds'
+group by 2, 3, 4 
+having count(*) > 1
+order by 1 desc ; 
 
