@@ -16,6 +16,7 @@ usage:
 todo, high level.
  - reports: find top-consumers
  - reports: zoom in, tree, or hierarchy.. despite yb-claim..
+ - try logging "sessions" from client_node_ip: create_dt and gone_dt, or sess_id
  - link ahs to activity, qry-text not the same, with/out $n substitutes
  - link ash to pg_stat_statements with query_id
  - save pg_stat_stmt + metrics (2 tables: stmnt_id, and id+metrics_in_interval)
@@ -23,6 +24,7 @@ todo, high level.
 todo:
  - check TEST_ash flag.. try out ?
  - check load of metrics-curling.. http://localhost:9004/prometheus-metrics
+ - spot ClientRead as passive status ?  : no proof.. forget it for now
  - test on colocated db: only 1 tablet, and 1 table-name. complicated..?  hmm
  - still duplicates in ash: wait-event-aux is sometimes only distinquiser..
    revert to id as key !
@@ -32,6 +34,7 @@ todo:
  - pg_stat_statement; could use a timestamp of "date-time found"
  - pg_stat_statement: consider merge with new stats every 10min ? 
  - split get_ash() in  3 : ash, pg_stat_statments, and pg_stat_activity
+ - get_ash(): output text: added n records, in m ms.
  - Q: how to relate queryid to pg_stat_activity, ask for enhancement ?
  - Q: how to relate sessionid to pid ? 
  - Q: Mechanism to run SQL on every node ? Scheduler? 
@@ -136,8 +139,9 @@ CREATE TABLE public.ybx_ash (
 split into 1 tablets
 ;
 
--- create index ybx_ash_dt on ybx_ash ( sample_time ASC, root_request_id, rpc_request_id ); 
-create index ybx_ash_key  on ybx_ash ( sample_time asc, host, rpc_request_id, root_request_id ) ; 
+-- create index ybx_ash_dt  on ybx_ash ( sample_time ASC, root_request_id, rpc_request_id ); 
+   create index ybx_ash_key on ybx_ash ( sample_time asc, host, root_request_id, rpc_request_id, wait_event ) ; 
+
 create index ybx_ash_host on ybx_ash ( host, sample_time asc ) ; 
 
 

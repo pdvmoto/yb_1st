@@ -1,5 +1,5 @@
 
-\set n_sec 36000.0
+\set n_sec 900.0
 
 /*
 
@@ -26,6 +26,18 @@ todo:
  - top-event per interval, per minute if possible..
 
 */
+
+/* --- find activity ---
+
+SELECT pa.query, pa.state , pa.*  
+FROM gv$pg_stat_activity pa  
+where 1=1 
+--and state = 'active' 
+and query not like 'FETCH 100 FROM c1'
+order by state 
+ ;
+
+----- */
 
 \! clear 
 
@@ -54,13 +66,10 @@ from gv$yb_active_session_history
 group by gv$host
 order by gv$host;
 
-select host current_host, uuid from yb_servers () tsrv_uuid where public_ip in ( select get_host() ) ;
-
 \echo .
-\! read -t 10 -p "above: check if any data present in local and gv views... " abc
+\! read -t 10 -p "1. above: check if any data present in local and gv views... " abc
 \echo .
 \echo .
-\! sleep 2
 
 select 'ash data stored in DB, global on all nodes... ' as second_check ; 
 
@@ -81,10 +90,10 @@ group by host
 order by host ;
 
 \echo .
-\! read -t 10 -p "above: check total data stored, per hosts... " abc
+\! read -t 10 -p "2. above: check total data stored, per hosts... " abc
 \echo .
 \echo .
-\! sleep 2
+--\! sleep 2
 
 
 -- busiest nodes in sample
@@ -94,11 +103,11 @@ select
 , to_char ( min (sample_time), 'YYYY-MM-DD HH24:MI:SS' ) oldest_stored
 , to_char ( max (sample_time), 'YYYY-MM-DD HH24:MI:SS' ) latest_stored
 , to_char (  age ( now (), max(sample_time) ), 'ssss' )  secs_ago
-, host
-from ybx_ash , cutoff c
+, a.host
+from ybx_ash a, cutoff c
 where sample_time > c.sincedt
-group by host
-order by host ;
+group by a.host
+order by a.host ;
 
 
 /* **** 
@@ -118,37 +127,98 @@ order by 1 desc
 limit 10;
 *****  */ 
 
--- busiest events class
+-- busiest events component 
+
 with cutoff as  
 (  select now() - make_interval (secs => :n_sec) as sincedt
 , get_host() as host 
 ) 
-select count (*) cnt, sincedt, wait_event_class, host
+select  count (*)             cnt
+      , wait_event_component  busiest_comp 
+--, host
 from ybx_ash ya
    , cutoff c 
 where ya.sample_time > c.sincedt
-group by wait_event_class, sincedt, host
+group by wait_event_component -- , c.host
 order by 1 desc  
+;
+
+with cutoff as  
+(  select now() - make_interval (secs => :n_sec) as sincedt
+, get_host() as host 
+) 
+select    wait_event_component  per_comp 
+        , count (*)             cnt
+        , ya.host               busiest_host
+from ybx_ash ya
+   , cutoff c 
+where ya.sample_time > c.sincedt
+group by 1, 2 
+order by ya.host, 1 desc  
+limit 30;
+
+with cutoff as  
+(  select now() - make_interval (secs => :n_sec) as sincedt
+, get_host() as host 
+) 
+select    ya.host               per_host
+        , count (*)             cnt
+        , wait_event_component  busiest_comp 
+from ybx_ash ya
+   , cutoff c
+where ya.sample_time >  c.sincedt
+group by wait_event_component, ya.host
+order by ya.host, 2 desc
 limit 30;
 
 \echo .
-\! read -t 10 -p "above: top-event per hosts... " abc
+\! read -t 10 -p "3. above: top-component per hosts, in what layer... " abc
+\echo .
+\echo .
+
+with cutoff as  
+(  select now() - make_interval (secs => :n_sec) as sincedt
+, get_host() as host 
+) 
+select  count (*)         cnt
+      , ya.host            host
+      , wait_event_class  busiest_class
+from ybx_ash ya
+   , cutoff c 
+where ya.sample_time > c.sincedt
+group by wait_event_class, ya.host
+order by 1 desc, 2
+limit 30;
+
+\echo .
+\! read -t 10 -p "3.1. above: top-class per hosts... " abc
+\echo .
+\echo .
+
+\echo .
+\! read -t 10 -p "4. below: top-ev_type per hosts... " abc
 \echo .
 \echo .
 
 -- busiest events, type
-with cutoff as ( select now() - interval '900 seconds' as sincedt ) 
-select count (*) cnt, wait_event_type, host
+with cutoff as ( select now() - make_interval ( secs=> :n_sec ) as sincedt ) 
+select  count (*)    cnt
+      ,              ya.host
+      ,              wait_event_type
 from ybx_ash ya
    , cutoff c 
 where ya.sample_time > c.sincedt
-group by wait_event_type, host
-order by 1 desc 
-limit 20;
+group by wait_event_type, ya.host
+order by 1 desc, 2
+limit 30;
 
 -- busiest events
-with cutoff as ( select now() - interval '900 seconds' as sincedt ) 
-select count (*) cnt, wait_event_class, wait_event_type, wait_event, host
+with cutoff as ( select now() - make_interval ( secs=>:n_sec ) as sincedt ) 
+select count (*) cnt
+    , wait_event_class
+    , wait_event_type
+    , wait_event
+    , ya.host
 from ybx_ash ya
    , cutoff c 
 where ya.sample_time > c.sincedt
@@ -158,38 +228,66 @@ limit 40;
 
 -- -- -- now check for busiest tablets..
 
-with cutoff as ( select now() - interval '900 seconds' as sincedt ) 
-select count (*) cnt, wait_event_class, wait_event_type, wait_event, wait_event_aux, host
+with cutoff as ( select now() - make_interval ( secs=>:n_sec ) as sincedt ) 
+select count (*)  cnt
+    , wait_event_aux
+    , ya.host
 from ybx_ash ya
    , cutoff c 
 where ya.sample_time > c.sincedt
   and ya.wait_event_aux is not null
-group by              wait_event_class, wait_event_type, wait_event, wait_event_aux, host
+group by --         wait_event_class, wait_event_type
+         wait_event_aux, host
 order by 1 desc 
 limit 30;
 
+select count (*)  cnt
+    ,             a.host
+    ,             a.wait_event_aux
+    ,             yt.ysql_schema_name
+    ,             yt.table_name
+from ybx_ash a
+   , ybx_tblt yt 
+where 1=1
+and   substr ( yt.tablet_id, 1, 15) = a.wait_event_aux  
+and   yt.host = a.host     -- on same host as ahs-record
+and   yt.gone_time is null -- only active tablets
+and   a.sample_time > ( now() - make_interval ( secs=>:n_sec ) )
+and   a.wait_event_aux is not null
+-- and wait_event_component not in ('YCQL')
+group by a.host, a.wait_event_aux, yt.ysql_schema_name, yt.table_name 
+order by 1 desc, 2 
+limit 30 ;
+
 \! echo above the busiest tablets per host.
 \! echo  next some aggregates over total ash-table
-\! read -t 10 -p "next are sum-samples per class, per type, per aux..." abc
 
+\! read -t 10 -p "5. next are sum-samples per class, per type, per aux..." abc
+
+\! echo .
 
 select count (*), a.wait_event_type
 from ybx_ash a
 where 1=1
-and wait_event_component not in ('YCQL') 
+--and wait_event_component not in ('YCQL') 
 and a.sample_time > ( now() - make_interval (secs => :n_sec ) ) 
 group by  a.wait_event_type
 order by 1 desc ; 
 
 \! read -t 10 -p "above the w-e types in last interval.." abc
+\! echo .
+\! echo .
 
 select count (*), a.host, a.wait_event_type
 from ybx_ash a
--- where wait_event_component not in ('YCQL') 
+where 1=1
+--and wait_event_component not in ('YCQL') 
+and a.sample_time > ( now() - make_interval (secs => :n_sec ) ) 
 group by  a.host, a.wait_event_type
 order by a.host, 1 desc ;
 
 
+/*** 
 select count (*), a.wait_event_component
 from ybx_ash a
 -- where wait_event_component not in ('YCQL') 
@@ -215,19 +313,25 @@ from ybx_ash a
 group by a.host, a.wait_event_class 
 order by a.host, 1 desc ; 
 
+***/ 
+
 select count (*), a.wait_event 
 from ybx_ash a
---where wait_event_component not in ('YCQL') 
+where 1=1
+and a.sample_time > ( now() - make_interval (secs => :n_sec ) ) 
 group by a.wait_event 
 order by 1 desc ; 
 
 select count (*), a.host, a.wait_event 
 from ybx_ash a
---where wait_event_component not in ('YCQL') 
+where 1=1
+and a.sample_time > ( now() - make_interval (secs => :n_sec ) ) 
 group by a.host, a.wait_event 
 order by a.host, 1 desc ; 
 
-select count (*), a.wait_event_aux, yt.table_name
+select count (*)
+, a.wait_event_aux
+, yt.table_name
 from ybx_ash a
    , ybx_tblt yt 
 where 1=1
@@ -249,16 +353,19 @@ and wait_event_aux is not null
 -- and wait_event_component not in ('YCQL')
 group by a.host, a.wait_event_aux, yt.ysql_schema_name, yt.table_name 
 order by a.host, 1 desc 
-limit 40 ;
+limit 30 ;
 
-\! read -t 10 -p "above: table_names, next checking top-level node-ids aux..." abc
+\! read -t 10 -p "7. above: table_names, next checking top-level node-ids aux..." abc
+\! echo .
+\! echo .
 
 
 -- find top root_request, with most counts..
 -- note: clientRead seems to signify "at client", or "idle-at-client"
 select count (*)
---, min (sample_time), max(sample_time)
-, ya.root_request_id top_root_req, ya.query_id top_qry
+    --, min (sample_time) , max(sample_time)
+    , ya.root_request_id  top_root_req
+    , ya.query_id         top_qry
 from ybx_ash ya 
 where ya.root_request_id::text not like '000%'
 and ya.sample_time > ( now() - make_interval ( secs=>:n_sec ) )
@@ -267,7 +374,30 @@ group by ya.root_request_id , ya.query_id
 order by 1 desc 
 limit 20;
 
-\! read -t 10 -p "next checking top-level node-ids aux..." abc
+-- try looking for qry via id, using saved pgs_stmnt
+select count (*)
+    --, min (sample_time) , max(sample_time)
+    , ya.root_request_id  top_root_req
+    , ya.query_id         top_qry
+    , max ( substr ( query, 1, 200)  ) as Query
+from ybx_ash ya 
+   , ybx_pgs_stmt q
+where 1=1
+and   q.queryid = ya.query_id
+and   ya.root_request_id::text not like '000%'
+and   ya.sample_time > ( now() - make_interval ( secs=>:n_sec ) )
+group by ya.root_request_id , ya.query_id
+order by 1 desc 
+limit 20;
+
+-- try looking for qry via id, using saved pgs_stmnt
+
+select 'Also find originating client_ip, port, session' Notes ;
+
+
+\! read -t 10 -p "8. next checking top-level node-ids aux..." abc
+\! echo .
+\! echo .
 
 
 select  
@@ -282,8 +412,9 @@ order by 2, 1  ;
 
 with cutoff as ( select now() - make_interval (secs => :n_sec )  as sincedt ) 
 select  
-  to_char ( a.sample_time, 'DDD DY HH24:00') as dt, a.host 
-, count (*) samples
+  to_char ( a.sample_time, 'DDD DY HH24:00') as dt
+,            a.host 
+, count (*)  samples
 from ybx_ash a
    , cutoff c
 where 1=1 
@@ -307,22 +438,27 @@ and a.sample_time > c.sincedt
 group by 
   --host, 
   to_char ( a.sample_time, 'D DY HH24:MI DDD')
-  having count(*) > 4
-order by 1 desc , 2 ; 
+  having count(*) > 5
+order by 1, 2 ; 
  
-\! read -t 10 -p "above, check per timeslot..." abc
+\! read -t 10 -p "10. above, check per timeslot..." abc
+\! echo .
+\! echo .
 
 -- this seems to work..
-select count (*) , ash.client_node_ip, psa.application_name , psa.query
+select  count (*)                             cnt 
+      ,                                       ash.client_node_ip
+      , substr ( psa.application_name, 1, 10) app_name
+      , substr ( psa.query, 1, 60 )           query__
 from ybx_ash ash  
  --gv$yb_active_session_history  ash
  , ybx_pgs_act psa
 --ybx_ash ash
  where 1=1 
  and ash.client_node_ip = host (psa.client_addr) || ':' || psa.client_port
- and psa.state ='active'
-and query not like '%get_ash%'
- and age ( now(), ash.sample_time ) < interval '7200 seconds'
+-- and psa.state ='active'
+-- and query not like '%get_ash%'
+and ash.sample_time  > ( now() - make_interval ( secs=> :n_sec ) )
 group by 2, 3, 4 
 having count(*) > 1
 order by 1 desc ; 
