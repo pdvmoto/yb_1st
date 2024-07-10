@@ -27,18 +27,32 @@ todo:
 
 */
 
-select 'ash from memory contents, local and global' as first_check ; 
+\! clear 
 
-select count (*) total_in_buff, min (sample_time) oldest_in_buff, max(sample_time) latest_in_buff
+select 'ash from memory contents, local and global' as ashrep_check ; 
+
+select get_host() running_ahsrepn 
+, :n_sec secs_interval
+, to_char ( now()  - make_interval ( secs=> :n_sec ), 'YYYY-DD-MM HH24:MI:SS' ) in_between
+, to_char ( now(), 'YYYY-DD-MM HH24:MI:SS' ) and_now
+;
+
+select host current_host, uuid 
+from yb_servers () tsrv_uuid where public_ip in ( select get_host() ) ;
+
+select  count (*) local_samples
+      , to_char ( min (sample_time), 'YYYY-MM-DD HH24:MI:SS' ) oldest_in_buff
+      , to_char ( max (sample_time), 'YYYY-MM-DD HH24:MI:SS' ) latest_in_buff
+      , get_host() local_host
 from yb_active_session_history ;
 
-select count (*) total_in_buff, min (sample_time) oldest_in_buff, max(sample_time) latest_in_buff
-from gv$yb_active_session_history ;
-
-select count (*) total_in_buff,  min (sample_time) oldest_in_buff, max(sample_time) latest_in_buff, gv$host
+select count (*) global_samples
+      , to_char ( min (sample_time), 'YYYY-MM-DD HH24:MI:SS' ) oldest_in_gv_buff
+      , to_char ( max (sample_time), 'YYYY-MM-DD HH24:MI:SS' ) latest_in_gv_buff
+      , gv$host  host
 from gv$yb_active_session_history 
-group by gv$host 
-order by 1 desc;
+group by gv$host
+order by gv$host;
 
 select host current_host, uuid from yb_servers () tsrv_uuid where public_ip in ( select get_host() ) ;
 
@@ -46,52 +60,69 @@ select host current_host, uuid from yb_servers () tsrv_uuid where public_ip in (
 \! read -t 10 -p "above: check if any data present in local and gv views... " abc
 \echo .
 \echo .
+\! sleep 2
 
 select 'ash data stored in DB, global on all nodes... ' as second_check ; 
 
-select count (*) total_records, min (sample_time) oldest_rec, max(sample_time) latest_rec
+select  count (*) nr_records
+      , to_char ( min (sample_time), 'YYYY-MM-DD HH24:MI:SS' ) oldest_stored
+      , to_char ( max (sample_time), 'YYYY-MM-DD HH24:MI:SS' ) latest_stored
+      , ( max (sample_time)  -  min (sample_time) ) as interval_stored
 from ybx_ash ;
 
-select count (*) total_records
-, min (sample_time) oldest_rec
-, max(sample_time) latest_rec
+select
+   count (*) recs_per_node
+, to_char ( min (sample_time), 'YYYY-MM-DD HH24:MI:SS' ) oldest_stored
+, to_char ( max (sample_time), 'YYYY-MM-DD HH24:MI:SS' ) latest_stored
 , to_char (  age ( now (), max(sample_time) ), 'ssss' )  secs_ago
 , host
 from ybx_ash 
 group by host
-order by 1;
+order by host ;
 
 \echo .
-\! read -t 10 -p "above: check data stored in ash-table(s), per hosts... " abc
+\! read -t 10 -p "above: check total data stored, per hosts... " abc
 \echo .
 \echo .
+\! sleep 2
 
 
--- busiest nodes
+-- busiest nodes in sample
 with cutoff as ( select now() - make_interval (secs => :n_sec )  as sincedt ) 
-select count (*) cnt, sincedt, host as busiest
-from ybx_ash ya
-   , cutoff c 
-where ya.sample_time > c.sincedt
-group by sincedt, host 
-order by 1 desc 
-limit 10;
+select
+   count (*)                                             recs_in_intrv
+, to_char ( min (sample_time), 'YYYY-MM-DD HH24:MI:SS' ) oldest_stored
+, to_char ( max (sample_time), 'YYYY-MM-DD HH24:MI:SS' ) latest_stored
+, to_char (  age ( now (), max(sample_time) ), 'ssss' )  secs_ago
+, host
+from ybx_ash , cutoff c
+where sample_time > c.sincedt
+group by host
+order by host ;
 
+
+/* **** 
 -- check current_node via view...
 with cutoff as  
-(  select now() - interval '900 seconds' as sincedt
+(  select now() - make_interval (secs => :n_sec) as sincedt
 , get_host() as host 
 ) 
-select count (*) cnt, sincedt, host as busiest_ash
+select count (*) cnt
+, sincedt
+, host as busiest_ash
 from yb_active_session_history ya
    , cutoff c 
 where ya.sample_time > c.sincedt
 group by sincedt, sincedt, host 
 order by 1 desc 
 limit 10;
+*****  */ 
 
 -- busiest events class
-with cutoff as ( select now() - interval '900 seconds' as sincedt ) 
+with cutoff as  
+(  select now() - make_interval (secs => :n_sec) as sincedt
+, get_host() as host 
+) 
 select count (*) cnt, sincedt, wait_event_class, host
 from ybx_ash ya
    , cutoff c 

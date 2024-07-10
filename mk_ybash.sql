@@ -16,15 +16,17 @@ usage:
 todo, high level.
  - reports: find top-consumers
  - reports: zoom in, tree, or hierarchy.. despite yb-claim..
- - link ahs to activity, currently on query-text and sample-approx-time, not ideal
+ - link ahs to activity, qry-text not the same, with/out $n substitutes
  - link ash to pg_stat_statements with query_id
  - save pg_stat_stmt + metrics (2 tables: stmnt_id, and id+metrics_in_interval)
 
 todo:
  - check TEST_ash flag.. try out ?
+ - check load of metrics-curling.. http://localhost:9004/prometheus-metrics
  - test on colocated db: only 1 tablet, and 1 table-name. complicated..?  hmm
  - still duplicates in ash: wait-event-aux is sometimes only distinquiser..
    revert to id as key !
+ - speed up insertions into logtables with indexes, host+ sample_time
  - types: tservers().uuid is txt, top-level is uuid.. mix of types
  - pg_stat_statement: needs re-think. for exmpl, save every "interval" and reset
  - pg_stat_statement; could use a timestamp of "date-time found"
@@ -135,6 +137,8 @@ split into 1 tablets
 ;
 
 -- create index ybx_ash_dt on ybx_ash ( sample_time ASC, root_request_id, rpc_request_id ); 
+create index ybx_ash_key  on ybx_ash ( sample_time asc, host, rpc_request_id, root_request_id ) ; 
+create index ybx_ash_host on ybx_ash ( host, sample_time asc ) ; 
 
 
 -- DROP TABLE public.ybx_pgs_stmt;
@@ -512,6 +516,7 @@ where not exists ( select 'x' from ybx_ash b
                    and   b.root_request_id = a.root_request_id
                    and   b.rpc_request_id  = coalesce ( a.rpc_request_id, 0 )
                    and   b.wait_event      = a.wait_event
+                   and   b.sample_time > ( now() - make_interval ( secs=>1800 ) )
                  );
 
 GET DIAGNOSTICS nr_rec_processed := ROW_COUNT;
