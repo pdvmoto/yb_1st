@@ -161,13 +161,16 @@ CREATE OR REPLACE FUNCTION ybx_get_waiteventlist()
   LANGUAGE plpgsql
 AS $$
 DECLARE
+  start_dt      timestamp         := clock_timestamp(); 
+  end_dt        timestamp         := now() ;
+  duration_ms   double precision  := 0.0 ;
   nr_rec_processed bigint := 0 ;
   retval bigint := 0 ;
   comment_txt text := 'Event found ' ;
 BEGIN
 
-  comment_txt := 'first found on node: ' || get_host () 
-                   || ', at: ' || now()::text ;
+comment_txt := 'first found on node: ' || get_host () 
+                 || ', at: ' || now()::text ;
 
 with l as (
   select distinct 
@@ -190,13 +193,19 @@ where not exists ( select 'xzy' as xyz from ybx_ash_eventlist f
                     where l.wait_event_component = f.wait_event_component
                     and   l.wait_event           = f.wait_event
 );
+  
+GET DIAGNOSTICS nr_rec_processed := ROW_COUNT;
+retval := retval + nr_rec_processed ;
+    
+duration_ms := EXTRACT ( MILLISECONDS from ( clock_timestamp() - start_dt ) ) ;
+  
+RAISE NOTICE 'ybx_get_waiteventlist() elapsed : % ms'     , duration_ms ;
+  
+insert into ybx_log ( logged_dt, host,       component,            ela_ms,      info_txt )
+       select clock_timestamp(), get_host(), 'ybx_get_waitevents', duration_ms, 'logging duration of test' ;
 
-  
-  GET DIAGNOSTICS nr_rec_processed := ROW_COUNT;
-  retval := retval + nr_rec_processed ;
-  
-  -- end of fucntion..
-  return retval ;
+-- end of fucntion..
+return retval ;
 
 END; -- get_waiteventlist, to incrementally populate table
 $$

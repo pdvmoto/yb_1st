@@ -130,7 +130,7 @@ create table ybx_log (
   , logged_dt   timestamptz   not null
   , host text 
   , component text
-  , duration double precision 
+  , ela_ms double precision 
   , info_txt text 
   , constraint ybx_log_pk primary key (logged_dt asc, id  asc)  
   );
@@ -512,10 +512,10 @@ CREATE OR REPLACE FUNCTION ybx_get_ash()
   LANGUAGE plpgsql 
 AS $$
 DECLARE
-  nr_rec_processed BIGINT := 0 ;
-  start_time TIMESTAMP := clock_timestamp() ;
-  end_time TIMESTAMP;
-  duration_millis DOUBLE PRECISION;
+  nr_rec_processed BIGINT         := 0 ;
+  start_dt      timestamp         := clock_timestamp();
+  end_dt        timestamp         := now() ;
+  duration_ms   double precision  := 0.0 ;
   retval bigint := 0 ;
 BEGIN
 
@@ -701,15 +701,16 @@ from pg_stat_activity a, h h ;
 GET DIAGNOSTICS nr_rec_processed := ROW_COUNT;
 retval := retval + nr_rec_processed ;
 RAISE NOTICE 'get_ash() pg_stat_activity : % ' , nr_rec_processed ; 
-
-  end_timestamp := clock_timestamp ();
-
-  duration_millis := EXTRACT(EPOCH FROM (end_time - start_time)) * 1000;
     
-    -- Log the duration (or you can perform any other action with it)
-    RAISE NOTICE 'Duration: % milliseconds', duration_millis;
-  -- end of fucntion..
-  return retval ;
+duration_ms := EXTRACT ( MILLISECONDS from ( clock_timestamp() - start_dt ) ) ; 
+
+RAISE NOTICE 'get_ash() elapsed : % ms'     , duration_ms ; 
+
+insert into ybx_log ( logged_dt, host,       component,     ela_ms,      info_txt )
+       select clock_timestamp(), get_host(), 'ybx_get_ash', duration_ms, 'logging duration of test' ; 
+
+-- end of fucntion..
+return retval ;
 
 END; -- get_ash, to incrementally populate table
 $$
@@ -730,8 +731,11 @@ CREATE OR REPLACE FUNCTION get_tablets()
   LANGUAGE plpgsql
 AS $$
 DECLARE
-  nr_rec_processed bigint := 0 ;
-  retval bigint := 0 ;
+  nr_rec_processed bigint         := 0 ;
+  start_dt      timestamp         := clock_timestamp();
+  end_dt        timestamp         := now() ;
+  duration_ms   double precision  := 0.0 ;
+  retval bigint                   := 0 ;
 BEGIN
 
 -- insert any new-found tablets on this node...
@@ -788,7 +792,14 @@ and not exists (                             -- no more local tblt
 
 GET DIAGNOSTICS nr_rec_processed := ROW_COUNT;
 retval := retval + nr_rec_processed ;
-RAISE NOTICE 'get_tblts() gone    : % tblts' , nr_rec_processed ; 
+
+duration_ms := EXTRACT ( MILLISECONDS from ( clock_timestamp() - start_dt ) ) ; 
+
+RAISE NOTICE 'get_tblts() gone    : % tblts'  , nr_rec_processed ; 
+RAISE NOTICE 'get_tblts() elapsed : % ms'     , duration_ms ; 
+
+insert into ybx_log ( logged_dt, host,       component,     ela_ms,      info_txt )
+       select clock_timestamp(), get_host(), 'get_tablets', duration_ms, 'logging duration of test' ; 
 
   -- end of fucntion..
   return retval ;
