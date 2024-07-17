@@ -16,6 +16,7 @@ usage:
 todo, high level.
  - reports: find top-consumers
  - reports: zoom in, tree, or hierarchy.. despite yb-claim..
+ - report + data: why sometimes 25K reords per minute?? what kind of events?
  - try logging "sessions" from client_node_ip: create_dt and gone_dt, or sess_id
  - link ahs to activity, qry-text not the same, with/out $n substitutes
  - link ash to pg_stat_statements with query_id
@@ -65,6 +66,9 @@ more todo
  - test with 1 or more nodes down + up. watch redistribution ?
  - Idle, ClientRead etc: make a list of Idle events
  - log yb-admin masters and tservers
+
+todo logging
+ - is tx-asc a good pk ?
 
 items done:
  - Schedule collection, say 5min loops: do_ashloop.sh seems to work. test.
@@ -116,6 +120,21 @@ $$ LANGUAGE sql;
   DROP TABLE public.ybx_pgs_stmt;
   DROP TABLE public.ybx_tblt;
 */
+
+/* generic logging..
+-- drop table public.ybx_log ;  
+*/
+
+create table ybx_log (
+    id          bigint        generated always as identity  
+  , logged_dt   timestamptz   not null
+  , host text 
+  , component text
+  , duration double precision 
+  , info_txt text 
+  , constraint ybx_log_pk primary key (logged_dt asc, id  asc)  
+  );
+ 
 
 CREATE TABLE public.ybx_ash (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -238,6 +257,23 @@ CREATE TABLE public.ybx_tblt (
 	partition_key_end bytea NULL
 )
 split into 1 tablets ;
+
+-- collect generic info
+
+-- drop table ybx_log ; 
+
+create table ybx_log (
+    id bigint generated always as identity  
+  , logged_dt timestamptz not null
+  , host text 
+  , component text
+  , info_txt text 
+  , constraint ybx_log_pk primary key (logged_dt asc, id  asc)  
+  );
+ 
+
+
+
 
 /* ******** collection of data via inserts.. moved to functions ****
 
@@ -476,7 +512,10 @@ CREATE OR REPLACE FUNCTION ybx_get_ash()
   LANGUAGE plpgsql 
 AS $$
 DECLARE
-  nr_rec_processed bigint := 0 ;
+  nr_rec_processed BIGINT := 0 ;
+  start_time TIMESTAMP := clock_timestamp() ;
+  end_time TIMESTAMP;
+  duration_millis DOUBLE PRECISION;
   retval bigint := 0 ;
 BEGIN
 
@@ -663,6 +702,12 @@ GET DIAGNOSTICS nr_rec_processed := ROW_COUNT;
 retval := retval + nr_rec_processed ;
 RAISE NOTICE 'get_ash() pg_stat_activity : % ' , nr_rec_processed ; 
 
+  end_timestamp := clock_timestamp ();
+
+  duration_millis := EXTRACT(EPOCH FROM (end_time - start_time)) * 1000;
+    
+    -- Log the duration (or you can perform any other action with it)
+    RAISE NOTICE 'Duration: % milliseconds', duration_millis;
   -- end of fucntion..
   return retval ;
 

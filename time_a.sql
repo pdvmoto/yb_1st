@@ -44,3 +44,39 @@ insert into  test_dt ( filler) select 'now is ' || now() ;
 
 select * from test_dt order by created_dt; 
 
+
+create or replace function ybx_time_t ()
+returns bigint
+language plpgsql
+AS $$
+DECLARE 
+  start_dt      timestamp         := clock_timestamp();
+  end_dt        timestamp         := now() ;
+  duration_ms   double precision  := 0.0 ;
+  n_retval      bigint            := 0 ;
+BEGIN
+  -- do try start from dclare
+  -- start_dt := clock_timestamp();
+
+  RAISE NOTICE 'ybx_time_t() : started: % ', start_dt ; 
+
+  perform pg_sleep ( 1 ) ;
+
+  --end_dt := clock_timestamp();
+
+  duration_ms := EXTRACT ( MILLISECONDS from ( clock_timestamp() - start_dt ) ) ; 
+
+  RAISE NOTICE 'ybx_time_t() :     end: % , duration % ms'
+    , end_dt, duration_ms ;
+
+  insert into ybx_log ( logged_dt, host, component, ela_ms, info_txt )
+         select clock_timestamp(), get_host(), 'ybx_time_t', duration_ms, 'logging duration of test' ; 
+
+  return n_retval ; 
+
+END ; -- time_t
+$$
+;
+
+select ybx_time_t () ; 
+

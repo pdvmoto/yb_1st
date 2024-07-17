@@ -10,6 +10,7 @@ export MASTERS=`cat /root/var/conf/yugabyted.conf | jq -r .current_masters | sed
 
 alias       ll='ls -la '
 alias      ltm='ls -ltra ' 
+alias    ybash='nohup do_ashloop.sh &' 
 alias      ysl='ysqlsh -h $HOSTNAME -U yugabyte ' 
 alias      ysf='ysqlsh postgresql://yugabyte@node2:5433,node3:5433,node4:5433,node5:5433,node6:5433,node7:5433,node8:5433?connect_timeout=2 ' 
 alias      yba='yb-admin -master_addresses $MASTERS '
