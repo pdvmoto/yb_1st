@@ -114,12 +114,33 @@ select * from gv$ash();
 -- The user and password are hardcoded here (yugabyte), but you can create your own user mapping to each server.
 
 -- add a list of wait-events for lookup and comments
-create table ybx_ash_eventlist as 
-select distinct wait_event_component, wait_event_type, wait_event_class, wait_event, ' '::text as wait_event_notes
+create table ybx_ash_eventlist (
+  wait_event_component    text not null
+, wait_event_type         text 
+, wait_event_class        text
+, wait_event              text not null
+, found_first_host        text
+, found_first_dt          timestamp
+, wait_event_notes        text
+, constraint ybx_ash_eventlist_pk primary key ( wait_event_component asc, wait_event )
+);
+
+-- pk seems to be:
+-- alter table ybx_ash_eventlist add constraint ybx_ash_eventlist_pk primary key ( wait_event_component, wait_event ) ;
+
+/* -- insert first events...
+select distinct 
+  wait_event_component
+, wait_event_type
+, wait_event_class
+, wait_event
+, get_host()
+, now()
+, ' '::text as wait_event_notes
 from gv$yb_active_session_history ; 
 
 -- pk seems to be:
-alter table ybx_ash_eventlist add constraint ybx_ash_eventlist_pk primary key ( wait_event_component, wait_event ) ;
+--alter table ybx_ash_eventlist add constraint ybx_ash_eventlist_pk primary key ( wait_event_component, wait_event ) ;
 
 
 -- later add events..
@@ -143,7 +164,7 @@ where not exists ( select 'xyz' as xyz from ybx_ash_eventlist f
                     where l.wait_event_component = f.wait_event_component
                     and   l.wait_event           = f.wait_event
 );
-
+*** better use and test function to add events **** */ 
   
 /* *****************************************************************
 
@@ -178,6 +199,8 @@ with l as (
   , wait_event_type
   , wait_event_class
   , wait_event
+  , get_host() as found_first_host
+  , now()      as found_first_dt
   , comment_txt as add_comment_txt
   from yb_active_session_history 
 )
@@ -187,6 +210,8 @@ select distinct
     , wait_event_type
     , wait_event_class
     , wait_event
+    , found_first_host        
+    , found_first_dt
     , add_comment_txt
 from l l
 where not exists ( select 'xzy' as xyz from ybx_ash_eventlist f
@@ -211,5 +236,6 @@ END; -- get_waiteventlist, to incrementally populate table
 $$
 ; 
 
+-- test function right away
 select ybx_get_waiteventlist() ; 
 

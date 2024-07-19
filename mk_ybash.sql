@@ -60,7 +60,7 @@ more todo
  - get 1 benchmark, and test.., need tables of 2G or more to really hammer..
  - standardize test-results: use script to report on cutoff-interval 
  - compare with mapped volumes and local-docker volumes
- - compare with more docker-rerouces: more cpus: not a success.
+ - compare with more docker-resources: more cpus: not a success.
  - compare with smaller interval, say 100ms: not on mac-docker, cpu loaded..
  - test with fresh-start cluster: clean memory ? 
  - test with 1 or more nodes down + up. watch redistribution ?

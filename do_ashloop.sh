@@ -10,33 +10,42 @@
 #
 # todo:
 #   - configur nr seconds as parameter, 120sec seems ok for now, measure durations..
+#   - use semaphore to stop running
 #   - test sleep-pg vs sleep-linux, consume a pg-process, detect sleep-wait ? 
 #   - configure for credentials ? 
 #   - add detection of new event where not exist in ybx_ash_eventlist
 #
 
 # a bit quick, during benchmarkng, but set to 5 or 10min later
-n_secs=120
+N_SECS=120
+F_SEM=/tmp/ybx_ash_off.sem
 
 while true 
 do
 
-  date "+%Y-%m-%dT%H:%M:%S do_ashloop.sh: running on host $HOSTNAME ..."
+  if [ -f ${F_SEM} ]; then
+
+    date "+%Y-%m-%dT%H:%M:%S do_ashloop.sh on ${HOSTNAME} : no ash, ${F_SEM} found "
+
+  else 
+
+    date "+%Y-%m-%dT%H:%M:%S do_ashloop.sh on ${HOSTNAME} : running ..."
   
-  ysqlsh -h $HOSTNAME -X <<EOF
-    \timing
-    select ybx_get_ash () ;
-    select get_tablets () ;
-    select ybx_get_waiteventlist() as added_events;
+    ysqlsh -h $HOSTNAME -X <<EOF
+      \timing
+      select ybx_get_ash () ;
+      select get_tablets () ;
+      select ybx_get_waiteventlist() as added_events;
 
 EOF
-  
-  # echo on host: $HOSTNAME
+
+  fi
+ 
   echo .
-  date "+ %Y-%m-%dT%H:%M:%S do_ashloop.sh: sleeping on $HOSTNAME ..."
+  date "+%Y-%m-%dT%H:%M:%S do_ashloop.sh on ${HOSTNAME} : sleeping ${N_SECS} ..."
   echo .
 
-  sleep $n_secs
+  sleep $N_SECS
 
 done
 
