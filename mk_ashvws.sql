@@ -113,6 +113,11 @@ select * from gv$ash();
 
 -- The user and password are hardcoded here (yugabyte), but you can create your own user mapping to each server.
 
+
+select ' gv$ objects created for shared-views..... ' ; 
+
+
+/**** moved to main ash file  
 -- add a list of wait-events for lookup and comments
 create table ybx_ash_eventlist (
   wait_event_component    text not null
@@ -128,7 +133,7 @@ create table ybx_ash_eventlist (
 -- pk seems to be:
 -- alter table ybx_ash_eventlist add constraint ybx_ash_eventlist_pk primary key ( wait_event_component, wait_event ) ;
 
-/* -- insert first events...
+ -- insert first events...
 select distinct 
   wait_event_component
 , wait_event_type
@@ -164,7 +169,7 @@ where not exists ( select 'xyz' as xyz from ybx_ash_eventlist f
                     where l.wait_event_component = f.wait_event_component
                     and   l.wait_event           = f.wait_event
 );
-*** better use and test function to add events **** */ 
+*** above is OLD use and test function ad moved to main mk_ybash.sql **** */
   
 /* *****************************************************************
 
@@ -175,7 +180,7 @@ returns total nr of records added
 
 by running this function regularly, we hope to spot all events
 
-*/
+------ 
 
 CREATE OR REPLACE FUNCTION ybx_get_waiteventlist()
   RETURNS bigint
@@ -239,3 +244,4 @@ $$
 -- test function right away
 select ybx_get_waiteventlist() ; 
 
+*************/ 

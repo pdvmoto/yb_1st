@@ -17,7 +17,7 @@
 #
 
 # a bit quick, during benchmarkng, but set to 5 or 10min later
-N_SECS=120
+N_SECS=180
 F_SEM=/tmp/ybx_ash_off.sem
 
 while true 
@@ -34,8 +34,8 @@ do
     ysqlsh -h $HOSTNAME -X <<EOF
       \timing
       select ybx_get_ash () ;
-      select get_tablets () ;
-      select ybx_get_waiteventlist() as added_events;
+      select ybx_get_tblts () ;
+      select ybx_get_evlst() as added_events;
 
 EOF
 

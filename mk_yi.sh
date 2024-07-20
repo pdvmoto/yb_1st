@@ -64,7 +64,7 @@ sleep 2
 #
 
 # nodenrs="2 3 4 5 6 7 8"
-  nodenrs="2 3 4 5 6 7 8 "
+  nodenrs=" 7 8 "
 
 # create nodes, platform, install tools, but no db yet...
 for nodenr in $nodenrs

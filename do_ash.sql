@@ -2,10 +2,13 @@
 
 */
 
-select 
-ybx_get_ash () ash_collected, 
-get_tablets () tablets_processed,
-get_host () host_node
-; 
+\timing on
 
+select 'doing ASH on : ' || ybx_get_host() as title ;
+
+select ybx_get_ash () ash_collected;  
+
+select get_tablets () tablets_processed ; 
+
+select ybx_get_evlst() as added_events;
 
