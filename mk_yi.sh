@@ -136,6 +136,9 @@ do
   docker cp do_ashloop.sh $hname:/usr/local/bin/do_ashloop.sh
   docker exec -it $hname chmod 755 /usr/local/bin/do_ashloop.sh
 
+
+  echo $hname : Todo: add startsadc.sh or similar to help collect sar
+
   # more tooling... make sure the files are in working dir
 
   echo $hname : adding yugatool and enabling ysql_bench...

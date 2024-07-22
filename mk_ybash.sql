@@ -532,10 +532,13 @@ CREATE OR REPLACE FUNCTION ybx_get_tblts()
 AS $$
 DECLARE
   nr_rec_processed bigint         := 0 ;
+  n_created     bigint            := 0 ;
+  n_gone        bigint            := 0 ;
   start_dt      timestamp         := clock_timestamp();
   end_dt        timestamp         := now() ;
   duration_ms   double precision  := 0.0 ;
-  retval bigint                   := 0 ;
+  retval        bigint            := 0 ;
+  cmmnt_txt     text              := ' ' ;
 BEGIN
 
 -- insert any new-found tablets on this node...
@@ -573,9 +576,9 @@ where not exists (
   and   u.gone_time is null  --  catch moving + returning tablets 
   ) ;
 
-GET DIAGNOSTICS nr_rec_processed := ROW_COUNT;
-retval := retval + nr_rec_processed ;
-RAISE NOTICE 'ybx_get_tblts() created : % tblts' , nr_rec_processed ; 
+GET DIAGNOSTICS n_created := ROW_COUNT;
+retval := retval + n_created ;
+RAISE NOTICE 'ybx_get_tblts() created : % tblts' , n_created ; 
 
 -- update the gone_date if tablet no longer present..
 -- signal gone_date if ... gone
@@ -590,16 +593,18 @@ and not exists (                             -- no more local tblt
   )
 ;
 
-GET DIAGNOSTICS nr_rec_processed := ROW_COUNT;
-retval := retval + nr_rec_processed ;
+GET DIAGNOSTICS n_gone := ROW_COUNT;
+retval := retval + n_gone ;
 
 duration_ms := EXTRACT ( MILLISECONDS from ( clock_timestamp() - start_dt ) ) ; 
 
-RAISE NOTICE 'ybx_get_tblts() gone    : % tblts'  , nr_rec_processed ; 
+RAISE NOTICE 'ybx_get_tblts() gone    : % tblts'  , n_gone ; 
 RAISE NOTICE 'ybx_get_tblts() elapsed : % ms'     , duration_ms ; 
 
+cmmnt_txt := 'created: ' || n_created || ', gone: ' || n_gone || '.' ;
+
 insert into ybx_log ( logged_dt, host,       component,     ela_ms,      info_txt )
-       select clock_timestamp(), ybx_get_host(), 'ybx_get_tblts', duration_ms, 'logging duration of test' ; 
+       select clock_timestamp(), ybx_get_host(), 'ybx_get_tblts', duration_ms, cmmnt_txt ; 
 
   -- end of fucntion..
   return retval ;
