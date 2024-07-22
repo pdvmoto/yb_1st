@@ -47,6 +47,8 @@
 # get some file to log stmnts, start simple
 LOGFILE=mk_nodes.log
 
+echo `date` $0 : creating cluster... >> $LOGFILE
+
 # docker network rm yb_net
 # sleep 2
 docker network create --subnet=172.20.0.0/16 --ip-range=172.20.0.0/24  yb_net
@@ -64,7 +66,7 @@ sleep 2
 #
 
 # nodenrs="2 3 4 5 6 7 8"
-  nodenrs=" 7 8 "
+  nodenrs=" 2 3 4 5 "
 
 # create nodes, platform, install tools, but no db yet...
 for nodenr in $nodenrs
@@ -87,11 +89,10 @@ do
     -p${yb7port}:7000 -p${yb9port}:9000      \
     -p${yb13port}:13433                      \
     -p${yb15port}:15433                      \
-    -v /Users/pdvbv/yb_data/$hname:/root/var \
     $YB_IMAGE                                \
     tail -f /dev/null `
  
-  # to map volume, add this line..
+  # to map volume, add this line just above YB_IMAGE..
   #  -v /Users/pdvbv/yb_data/$hname:/root/var \
 
   echo $hname ... creating container:
@@ -103,17 +104,12 @@ do
   $crenode
 
   echo .
-  sleep 1
+  sleep 2
   
   echo $hname : adding tools 
   echo .
-  echo $hname : adding jq .... Why first 
-  # skip jq, libs and yum need too much space ?
-  # echo $hname : installing jq  ...
-  # docker cp jq $hname:/usr/bin/jq
-  # docker exec $hname yum install jq -y
 
-  echo $hname : adding profile ...
+  echo $hname : adding profile to already present bashrc...
   docker cp yb_profile.sh $hname:/tmp/
   docker exec -it $hname sh -c "cat /tmp/yb_profile.sh >> /root/.bashrc "
 
@@ -125,20 +121,25 @@ do
   docker cp ybflags.conf $hname:/home/yugabyte/
 
   echo $hname : adding psg ...
-  docker cp `which psg` $hname:/usr/local/bin/psg
+  docker cp `which psg`     $hname:/usr/local/bin/psg
   docker exec -it $hname chmod 755 /usr/local/bin/psg
 
   echo $hname : adding ff ...
-  docker cp `which ff` $hname:/usr/local/bin/ff
+  docker cp `which ff`      $hname:/usr/local/bin/ff
   docker exec -it $hname chmod 755 /usr/local/bin/ff
 
-  echo $hname : adding do_ashloop.sh ...
-  docker cp do_ashloop.sh $hname:/usr/local/bin/do_ashloop.sh
-  docker exec -it $hname chmod 755 /usr/local/bin/do_ashloop.sh
+  echo $hname : adding do_ashloop.sh and st_ startscript ...
+  docker cp do_ashloop.sh             $hname:/usr/local/bin/do_ashloop.sh
+  docker exec -it $hname   chmod 755         /usr/local/bin/do_ashloop.sh
+  docker cp st_ashloop.sh             $hname:/usr/local/bin/st_ashloop.sh
+  docker exec -it $hname   chmod 755         /usr/local/bin/st_ashloop.sh
 
-
-  echo $hname : Todo: add startsadc.sh or similar to help collect sar
-
+  echo $hname : add startsadc.sh or similar to help collect sar
+  docker cp startsadc.sh    $hname:/usr/local/bin/startsadc.sh
+  docker exec -it $hname chmod 755 /usr/local/bin/startsadc.sh
+  # detach, or do it later, bcse takes 30sec: 
+  # docker exec -it $hname startsadc.sh &
+  
   # more tooling... make sure the files are in working dir
 
   echo $hname : adding yugatool and enabling ysql_bench...
@@ -169,7 +170,6 @@ done
 echo .
 echo nodes created, next is starting yb 
 echo .
-echo if config files needed: stop  + do_profile.sh
 echo .
 echo pause 5 sec to Cntr-C .. or continue...
 echo . 
@@ -213,7 +213,7 @@ do
   ${startcmd}
 
   echo .
-  sleep 4
+  sleep 3
 
 done
 
@@ -235,13 +235,13 @@ docker run -d --network yb_net  \
   sleep 999999 
 
 # health checks:
-docker exec -it node2 yugabyted status 
-docker exec -it node3 yugabyted status 
-docker exec -it node4 yugabyted status 
-docker exec -it node5 yugabyted status 
-docker exec -it node6 yugabyted status 
-docker exec -it node7 yugabyted status 
-docker exec -it node8 yugabyted status 
+# docker exec -it node2 yugabyted status 
+# docker exec -it node3 yugabyted status 
+# docker exec -it node4 yugabyted status 
+# docker exec -it node5 yugabyted status 
+# docker exec -it node6 yugabyted status 
+# docker exec -it node7 yugabyted status 
+# docker exec -it node8 yugabyted status 
 
 echo .
 echo Scroll back and check if it all workd...
@@ -252,12 +252,13 @@ echo  - inspect dashboard : localhost:15433
 echo  - inspect node3:    : localhost:7003  and 9003, etc...
 echo . 
 echo . If so desired : 
-echo .    - [old] complete config of nodes 2-8 using  ./do_profile.sh, loops over nodes!
 echo .    - run yb_init.sql to load often-used functions.
-echo .    - run mk_ybash.sql to prepare ash-logging
-echo .    - activate do_ahsloop.sh on every node,  why no nohup from docker exec? 
+echo .    - run mk_ybash.sql prepare ash-logging
 echo .    - run mk_ashvws.sql to prepare live-ash viewing via gv$
-echo .    - run demo_fill.sql to load demo-table t, and use it for checks/monitor.
+echo .    - activate do_ahsloop.sh on every node,  why no nohup from docker exec? 
+echo .    - activate startsadc.sh to use sar
+echo .    - run demo_fill.sql to load demo-table t, use checks/monitor.
+echo .    - run mk_longt.sql to fill large-ish table
 echo . 
 echo Have Fun.
 echo .

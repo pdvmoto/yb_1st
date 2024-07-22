@@ -44,19 +44,19 @@ order by state
 
 select 'ash from memory contents, local and global' as ashrep_check ; 
 
-select get_host() running_ahsrepn 
+select ybx_get_host() running_ahsrepn 
 , :n_sec secs_interval
 , to_char ( now()  - make_interval ( secs=> :n_sec ), 'YYYY-DD-MM HH24:MI:SS' ) in_between
 , to_char ( now(), 'YYYY-DD-MM HH24:MI:SS' ) and_now
 ;
 
 select host current_host, uuid 
-from yb_servers () tsrv_uuid where public_ip in ( select get_host() ) ;
+from yb_servers () tsrv_uuid where public_ip in ( select ybx_get_host() ) ;
 
 select  count (*) local_samples
       , to_char ( min (sample_time), 'YYYY-MM-DD HH24:MI:SS' ) oldest_in_buff
       , to_char ( max (sample_time), 'YYYY-MM-DD HH24:MI:SS' ) latest_in_buff
-      , get_host() local_host
+      , ybx_get_host() local_host
 from yb_active_session_history ;
 
 select count (*) gv_samples
@@ -123,7 +123,7 @@ order by a.host ;
 -- check current_node via view...
 with cutoff as  
 (  select now() - make_interval (secs => :n_sec) as sincedt
-, get_host() as host 
+, ybx_get_host() as host 
 ) 
 select count (*) cnt
 , sincedt
@@ -140,7 +140,7 @@ limit 10;
 
 with cutoff as  
 (  select now() - make_interval (secs => :n_sec) as sincedt
-, get_host() as host 
+, ybx_get_host() as host 
 ) 
 select  
         count (*)             cnt
@@ -156,7 +156,7 @@ order by 1 desc
 -- add component + class..., e.g. does Tserver use CPU
 with cutoff as  
 (  select now() - make_interval (secs => :n_sec) as sincedt
-, get_host() as host 
+, ybx_get_host() as host 
 ) 
 select  
         count (*)             cnt
@@ -172,7 +172,7 @@ order by 1 desc
 
 with cutoff as  
 (  select now() - make_interval (secs => :n_sec) as sincedt
-, get_host() as host 
+, ybx_get_host() as host 
 ) 
 select  
         count (*)             cnt
@@ -190,7 +190,7 @@ order by 1 desc, 2
 
 with cutoff as  
 (  select now() - make_interval (secs => :n_sec) as sincedt
-, get_host() as host 
+, ybx_get_host() as host 
 ) 
 select   
           count (*)             cnt
@@ -205,7 +205,7 @@ limit 30;
 
 with cutoff as  
 (  select now() - make_interval (secs => :n_sec) as sincedt
-, get_host() as host 
+, ybx_get_host() as host 
 ) 
 select    
           count (*)                 cnt
@@ -225,7 +225,7 @@ limit 30;
 
 with cutoff as  
 (  select now() - make_interval (secs => :n_sec) as sincedt
-, get_host() as host 
+, ybx_get_host() as host 
 ) 
 select  count (*)         cnt
       , ya.host           per_host

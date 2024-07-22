@@ -15,7 +15,7 @@ usage:
  - optional: check to have yb_init.sql done, reate helper-functions (cnt)
  
 todo, high level.
- - rewrite deployent, functions, timers, and call-for-1-node scripts
+ - rewrite deployent, functions, timers, and call-for-1-node scripts: +/- ok
  - report of 15min, from gv. find busy minutes, find top-events, find top-consumers.
  - reports: find top-consumers
  - reports: zoom in, tree, or hierarchy.. despite yb-claim..
@@ -634,12 +634,12 @@ DECLARE
   end_dt        timestamp         := now() ;
   hostnm        text              := ybx_get_host() ;
   duration_ms   double precision  := 0.0 ;
-  nr_rec_processed bigint := 0 ;
-  retval bigint := 0 ;
-  comment_txt text := 'Event found ' ;
+  nr_rec_processed bigint         := 0 ;
+  retval        bigint            := 0 ;
+  cmmnt_txt     text              := 'Event found ' ;
 BEGIN
 
-comment_txt := 'first found on node: ' || hostnm 
+cmmnt_txt := 'first found on node: ' || hostnm 
                  || ', at: ' || start_dt::text ;
 
 /*
@@ -664,7 +664,7 @@ select distinct
     , wait_event
     , hostnm
     , start_dt
-    , comment_txt
+    , cmmnt_txt
 from yb_active_session_history l
 where not exists ( select 'xzy' as xyz from ybx_ash_evlst f
                     where l.wait_event_component = f.wait_event_component
@@ -677,9 +677,11 @@ retval := retval + nr_rec_processed ;
 duration_ms := EXTRACT ( MILLISECONDS from ( clock_timestamp() - start_dt ) ) ;
   
 RAISE NOTICE 'ybx_get_evlst() elapsed : % ms'     , duration_ms ;
-  
+
+cmmnt_txt := 'created: ' || nr_rec_processed || '.' ;
+
 insert into ybx_log ( logged_dt, host,       component,            ela_ms,      info_txt )
-       select clock_timestamp(), ybx_get_host(), 'ybx_get_evlst', duration_ms, 'logging duration of test' ;
+       select clock_timestamp(), ybx_get_host(), 'ybx_get_evlst', duration_ms, cmmnt_txt ;
 
 -- end of fucntion..
 return retval ;
