@@ -8,14 +8,15 @@
 #        then start yugabyted "manually"
 #
 # todo:
-#  - create loop over nodes 3-8, easier on script
-#  - automatically enhance /root/.bashrc  : do_profile.sh
-#  - automatically copy yugatool and link to /usr/local/bin : do_profile.sh 
-#  - set worker nodes, ip-.10?
-#  - use yugabyted.conf as controlling file, parameter-file. - included
+#  - use yugabyted.conf as controlling file, parameter-file. - included: test more
 #  - is it enough to just specify "masters", instead of join ? 
 #  - note: background=true and ui=true are specified, but those values are default ?
 #
+# done..
+#  - create loop over nodes 3-8, easier on script: done..
+#  - automatically enhance /root/.bashrc  : do_profile.sh : done..
+#  - automatically copy yugatool and link to /usr/local/bin : do_profile.sh  done.
+#  - set worker nodes, ip-.10? done.. can, but not using it 
 #
 # purpose: check effets of too many tablets??
 # compare to co-location?

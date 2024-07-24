@@ -35,5 +35,15 @@ EOF
   # sleep 2
   docker exec $node yugabyted start
 
+  echo .
+  echo `date` $0 : [stop and] started YB containers
+  echo `date` $0 : now adding st_sadc and ashloop 
+  echo `date` $0   push start-process to background to avoid wait-loops ...
+
+  echo .
+
+  docker exec -it $node startsadc.sh & 
+  docker exec -it $node st_ashloop.sh &
+
 done
 

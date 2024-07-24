@@ -564,7 +564,7 @@ order by 1, 2 ;
 -- this seems to work..
 select  count (*)                             cnt 
       ,                                       ash.client_node_ip
-      , substr ( psa.application_name, 1, 10) app_name
+      , substr ( psa.application_name, 1, 15) app_name
       , substr ( psa.query, 1, 60 )           query__
 from ybx_ash ash  
  --gv$yb_active_session_history  ash
