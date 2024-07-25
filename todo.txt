@@ -1,0 +1,7 @@
+
+generic todo list
+
+ - remove nodes from cluster, tservers and masters
+ - split ash-script into separate repostiories.
+ - investigate multi-region and replication.
+

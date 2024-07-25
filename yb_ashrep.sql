@@ -1,5 +1,5 @@
 
-\set n_sec 900.0
+\set n_sec 1800.0
 
 /*
 

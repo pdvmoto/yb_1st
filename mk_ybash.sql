@@ -13,9 +13,12 @@ usage:
  - test using do_ybash.sql : can all nodes collect data ?
  - schedule for regular collection, e.g. 1min, 10min.: do_ashloop.sh
  - optional: check to have yb_init.sql done, reate helper-functions (cnt)
- 
+ - optional: add \i mk_ashvws.sql for the gv views from Frankc.
+
 todo, high level.
- - rewrite deployent, functions, timers, and call-for-1-node scripts: +/- ok
+ - blog: save data in tables, then qry if needed.. only pick most recent data from mem.
+ - grafana: use qries with time (minute) and metrics.. 
+ - grafana: use qries with count per stmnt (over last x min), and display top stmnt.
  - report of 15min, from gv. find busy minutes, find top-events, find top-consumers.
  - reports: find top-consumers
  - reports: zoom in, tree, or hierarchy.. despite yb-claim..
@@ -92,6 +95,7 @@ items done:
  - ashrep.sql : use script with nr-seconds to list top-events? : done
  - eventlist: in do_ashrep.sql, Add regular detection of new event-names: done
  - parameters inteval + buffersizes to flagfile, but work with dflts.
+ - rewrite deployent, functions, timers, and call-for-1-node scripts: +/- ok
 
 
 future questions to answer:
@@ -113,6 +117,28 @@ notes:
     /home/yugabyte/postgres/bin/ysql_bench -T 30 -j 2 -c 2 -h $HOSTNAME -U yugabyte yugabyte
 
  - try for a hierarchy, find top-stateent, and events below it..
+
+ - pg_stat_statements: 
+    - needs to be reset from time 2time..
+    - contains cumulative values, better to sample every 15 min or so, and keep data with sample-time.
+
+blog -- -- - -
+
+title: logging behaviour-information in a distributed database.
+
+TL;DR: I choose to store database in tables, and put it there on a per-node basis. I tried to avoid too much inter-host communication. The price I pay is that I cause more disk IO, and less timely data.
+Note: I may be totally Wrong, and that is fine. Time will tell.
+
+Background:
+I'm using Yugabyte, a distributed database, and I try to keep track of behaviour, the history if you like, of the system. 
+PG and YB make some internal data available via views : pg_stat_statements, pg_stat_activity, yb_active_session_history and yb_local_tablets. As demonstrated <franck> and <yyga-ash>, this data can help you find bottlenecks and hotspots in your system. 
+The main challenge in a distributed database is that the information is availble on different nodes or hosts, and every host only sees its own data.
+
+I try to log data from pg_stat_statement, pg_stat_activity, and yb_active_session_history.
+PG and YB make some internal data available via views : pg_stat% and yb_active_session_history
+
+equivalent: GV$
+disadvantage: RPC calls and... 
 
 */ 
 
