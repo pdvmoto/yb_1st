@@ -126,13 +126,33 @@ blog -- -- - -
 
 title: logging behaviour-information in a distributed database.
 
-TL;DR: I choose to store database in tables, and put it there on a per-node basis. I tried to avoid too much inter-host communication. The price I pay is that I cause more disk IO, and less timely data.
+TL;DR: I choose to store data in tables, whereby every node logs its own data. To see the data, I query the tables with SQL.
+I tried to minimize additional inter-host communication, and avoid additional mechanisms like FDW or dedicated RPCs for system-information. 
+The disadvantages are... 1) insert activity and 2) incomplete logging when components are broken. 
 Note: I may be totally Wrong, and that is fine. Time will tell.
 
 Background:
-I'm using Yugabyte, a distributed database, and I try to keep track of behaviour, the history if you like, of the system. 
-PG and YB make some internal data available via views : pg_stat_statements, pg_stat_activity, yb_active_session_history and yb_local_tablets. As demonstrated <franck> and <yyga-ash>, this data can help you find bottlenecks and hotspots in your system. 
-The main challenge in a distributed database is that the information is availble on different nodes or hosts, and every host only sees its own data.
+I'm using Yugabyte, a distributed database, and I try to keep track the workload-history if you like, of the system. 
+PG and YB make some internal data available via views : pg_stat_statements, pg_stat_activity, yb_active_session_history and yb_local_tablets. 
+This data can help you find bottlenecks and hotspots in your system. 
+
+You can find the ASH documentatin here:
+https://docs.yugabyte.com/preview/explore/observability/active-session-history/
+
+And a very cool demonstration by Franck> here:
+https://dev.to/yugabyte/find-hotspots-with-yugabyte-active-session-history-45db
+
+This data will help you find bottlenecks and hotspots in your system. 
+Now I also wanted to keep that data for later analysis.
+
+
+
+Per node data.
+Yugabyte is a distributed database but the information from the views, active_session_history and pg_stats, is still "local" to each node, e.g. a node only sees and reports on its own status.
+
+Franck solved that by using Foreign-Data-Wrapper (FDW) to select the views from all remote nodes, and by doing a union-all on them. His gv$yb_active_session_history "fetches" all the data from all the nodes every time the view is queried. This also means the view becomes unusable when a node (part of the union-data in the view) is unresponsive or down.
+
+Global Views
 
 I try to log data from pg_stat_statement, pg_stat_activity, and yb_active_session_history.
 PG and YB make some internal data available via views : pg_stat% and yb_active_session_history
