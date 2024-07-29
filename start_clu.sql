@@ -36,9 +36,9 @@ EOF
   docker exec $node yugabyted start
 
   echo .
-  echo `date` $0 : [stop and] started YB containers
-  echo `date` $0 : now adding st_sadc and ashloop 
-  echo `date` $0   push start-process to background to avoid wait-loops ...
+  echo `date` $0 : [stop and] started YB containe on $node
+  echo `date` $0 : now try adding st_sadc and ashloop 
+  echo `date` $0 : push start-process to background to avoid wait-loops ...
 
   echo .
 
@@ -46,4 +46,10 @@ EOF
   docker exec -it $node st_ashloop.sh &
 
 done
+
+echo .
+echo `date` $0 : done, 
+echo `date` $0 : check all background processes, sar, ashloop...
+echo .
+
 

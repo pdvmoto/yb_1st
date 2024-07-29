@@ -17,6 +17,7 @@ usage:
 
 todo, high level.
  - blog: save data in tables, then qry if needed.. only pick most recent data from mem.
+ - add code + examples, notably interval
  - grafana: use qries with time (minute) and metrics.. 
  - grafana: use qries with count per stmnt (over last x min), and display top stmnt.
  - report of 15min, from gv. find busy minutes, find top-events, find top-consumers.
@@ -85,6 +86,7 @@ todo logging
 
 items done:
  - Schedule collection, say 5min loops: do_ashloop.sh seems to work. test.
+   startsadc.sh, st_ashloop.sh
  - function to collect-per-node, then call that function from each node.
    use GET DIAGNOSTICS integer_var = ROW_COUNT; to get+return rows: Done
  - add pg_stat_statement + activity: Done
@@ -124,7 +126,7 @@ notes:
 
 blog -- -- - -
 
-title: logging behaviour-information in a distributed database.
+title: logging performance-information in a distributed database.
 
 TL;DR: I choose to store the ASH data in tables, whereby every node logs its own data. To see the data, I query the tables with SQL.
 I tried to minimize additional inter-host communication, and avoid additional mechanisms like FDW or dedicated RPCs, while storing the data for possible later usage.

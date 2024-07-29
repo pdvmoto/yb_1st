@@ -488,6 +488,8 @@ limit 20;
 
 * ****** */
 
+select 'join saved ash from interval to saved stmnts' as next;
+
 -- try looking for qry via id, using saved pgs_stmnt
 select count (*)
     --, min (sample_time) , max(sample_time)
