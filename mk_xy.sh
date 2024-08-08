@@ -28,7 +28,8 @@
 # YB_IMAGE=yugabytedb/yugabyte:latest
 # YB_IMAGE=yugabytedb/yugabyte:2.19.0.0-b190        \
 # YB_IMAGE=yugabytedb/yugabyte:2.20.1.0-b97
-YB_IMAGE=yugabytedb/yugabyte:2.20.1.3-b3
+# YB_IMAGE=yugabytedb/yugabyte:2.20.1.3-b3
+YB_IMAGE=yugabytedb/yugabyte:latest
 
 
 # normally "keep" this net

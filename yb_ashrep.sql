@@ -542,6 +542,20 @@ group by
   host, to_char ( a.sample_time, 'DDD DY HH24:00')
 order by 2, 1  ; 
 
+with cutoff as ( select now() - make_interval (secs => 7200 )  as sincedt ) 
+select
+  to_char ( a.sample_time, 'DDD DY HH24:MI:00') as     dt_hr
+,            a.host
+, count (*)  smpls_per
+from ybx_ash a, cutoff c
+where 1=1
+--and wait_event_component not in ('YCQL')
+and a.sample_time > c.sincedt
+group by 2, 1
+  /* host , to_char ( a.sample_time, 'DDD DY HH24:MI:00') */
+order by 1, 2 \crosstabview
+  ;
+
 with cutoff as ( select now() - make_interval (secs => :n_sec )  as sincedt ) 
 select  
   to_char ( a.sample_time, 'D DY HH24:MI DDD') as dt_minute

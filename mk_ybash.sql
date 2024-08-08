@@ -17,10 +17,11 @@ usage:
 
 todo, high level.
  - blog: save data in tables, then qry if needed.. only pick most recent data from mem.
- - add code + examples, notably interval
+   - add code + examples, notably interval
+ - test with masters on separate nodes, see where activity goes.
+    sar shows equal activity, but top shows activ only on nodes with tablets..
  - grafana: use qries with time (minute) and metrics.. 
  - grafana: use qries with count per stmnt (over last x min), and display top stmnt.
- - report of 15min, from gv. find busy minutes, find top-events, find top-consumers.
  - reports: find top-consumers
  - reports: zoom in, tree, or hierarchy.. despite yb-claim..
  - report + data: why sometimes 25K reords per minute?? what kind of events?
@@ -28,16 +29,19 @@ todo, high level.
  - link ahs to activity, qry-text not the same, with/out $n substitutes
  - link ash to pg_stat_statements with query_id
  - save pg_stat_stmt + metrics (2 tables: stmnt_id, and id+metrics_in_interval)
+ - detect tablets that have moved, try finding "where to" or "where from"
+ - detect tablets on non-existing nodes.. close them..  (gone_time, closed by self or other...)? 
 
 todo:
- - boot-script for "running" contnrs: clean files, start yuga, start loops..
+ - num tablets : select * from yb_table_properties(16642 ) is wrong.., 
+    it relects nr tablest on startup of the tserver try this with auto-split, and see.
  - invalid byte sequence: some type conversion in get_ash ?
  - at some points, inserts of 10K records.. Why ??
  - check TEST_ash flag.. try out ?
  - check load of metrics-curling.. http://localhost:9004/prometheus-metrics
  - spot ClientRead as passive status ?  : no proof.. forget it for now
  - test on colocated db: only 1 tablet, and 1 table-name. complicated..?  hmm
- - still duplicates in ash: wait-event-aux is sometimes only distinquiser..
+ - unique key, still duplicates in ash: wait-event-aux is sometimes only distinquiser..
    revert to id as key !
  - speed up insertions into logtables with indexes, host+ sample_time
  - types: tservers().uuid is txt, top-level is uuid.. mix of types
@@ -85,6 +89,8 @@ todo logging
  - is tx-asc a good pk ?
 
 items done:
+ - report of 15min, from gv. find busy minutes, find top-events, find top-consumers.
+    done: yb_ashrep.sh [ arg1 [ arg2 ] ] 
  - Schedule collection, say 5min loops: do_ashloop.sh seems to work. test.
    startsadc.sh, st_ashloop.sh
  - function to collect-per-node, then call that function from each node.
@@ -214,6 +220,24 @@ Concluding remarks:
 
 I will try to create a repository with readable and usable demo-code (link when available) and I'm open to discussion of the topic and to examine pros and cons.
 
+ -- -- -- 
+blog 2
+
+To save the data to disk, we looked first at yb_ash.
+There is alreay a sample_time.
+We added an ID (sequence) and the nodename. 
+For the nodename, we created a dedicated function to "get the name". For the moment, we use the listening-address, but if a better alternative becomes available, we'll use that.
+It was complicated to find a "natual key" or a set of colums that was always unique, so we kept the ID.
+
+yb_local_tablets is the next item to save. 
+we add a node-name (host), and a capture-time.
+we also have a gone-time field, that can is used to detect tablets that have move.
+
+
+
+
+
+
 
 */ 
 
@@ -233,6 +257,16 @@ $$ LANGUAGE sql;
   DROP TABLE ybx_tblt;
   DROP TABLE ybx_ash_evlst;
 */
+
+/* geneate ash reps */
+
+create table ybx_ash_rep (
+ id           bigint        generated always as identity
+, first_dt    timestamptz
+, last_dt     timestamptz
+, remark_txt  text
+);
+
 
 /* generic logging..
 -- drop table ybx_log ;  

@@ -67,7 +67,7 @@ sleep 2
 #
 
 # nodenrs="2 3 4 5 6 7 8"
-  nodenrs=" 2 3 4 5 "
+  nodenrs=" 6 7 8 "
 
 # create nodes, platform, install tools, but no db yet...
 for nodenr in $nodenrs
@@ -222,18 +222,84 @@ done
 # ---- add a generic platform, worker-node.. ----
 
 # use nodeX, to have a neutral node in the network, 
-docker run -d --network yb_net  \
-  --hostname nodeX --name nodeX \
-  --ip 172.20.0.21              \
-  $YB_IMAGE                             \
-  yugabyted start --background=false --ui=true
+
+$hname=nodeX
+
+crenode=` \
+  echo docker run -d --network yb_net        \
+    --hostname $hname --name $hname          \
+    $YB_IMAGE                                \
+    tail -f /dev/null `
+
+  echo $hname ... creating container:
+  echo $crenode
+    
+  echo $crenode >> $LOGFILE                  
+    
+  # do it..
+  $crenode
+
+  echo .
+  sleep 2
+
+  echo $hname : adding tools 
+  echo .
+
+  echo $hname : adding profile to already present bashrc...
+  docker cp yb_profile.sh $hname:/tmp/
+  docker exec -it $hname sh -c "cat /tmp/yb_profile.sh >> /root/.bashrc "
+
+  echo $hname : adding psqlrc
+  docker cp ~/.psqlrc $hname:/tmp
+  docker exec -it $hname sh -c "cp /tmp/.psqlrc /root/.psqlrc"
+
+  echo $hname : adding ybflags.conf
+  docker cp ybflags.conf $hname:/home/yugabyte/
+
+  echo $hname : adding psg ...
+  docker cp `which psg`     $hname:/usr/local/bin/psg
+  docker exec -it $hname chmod 755 /usr/local/bin/psg
+
+  echo $hname : adding ff ...
+  docker cp `which ff`      $hname:/usr/local/bin/ff
+  docker exec -it $hname chmod 755 /usr/local/bin/ff
+
+  echo $hname : adding do_ashloop.sh and st_ startscript ...
+  docker cp do_ashloop.sh             $hname:/usr/local/bin/do_ashloop.sh
+  docker exec -it $hname   chmod 755         /usr/local/bin/do_ashloop.sh
+  docker cp st_ashloop.sh             $hname:/usr/local/bin/st_ashloop.sh
+  docker exec -it $hname   chmod 755         /usr/local/bin/st_ashloop.sh
+
+  echo $hname : add startsadc.sh or similar to help collect sar
+  docker cp startsadc.sh    $hname:/usr/local/bin/startsadc.sh
+  docker exec -it $hname chmod 755 /usr/local/bin/startsadc.sh
+  # detach, or do it later, bcse takes 30sec: 
+  # docker exec -it $hname startsadc.sh &
+  
+  # more tooling... make sure the files are in working dir
+
+  echo $hname : adding yugatool and enabling ysql_bench...
+  docker cp yugatool.gz $hname:/home/yugabyte/bin
+  cat <<EOF | docker exec -i $hname sh
+    gunzip /home/yugabyte/bin/yugatool.gz
+    chmod 755 /home/yugabyte/bin/yugatool
+    ln -s /home/yugabyte/bin/yugatool /usr/local/bin/yugatool
+    ln -s /home/yugabyte/postgres/bin/ysql_bench /usr/local/bin/ysql_bench
+
+echo $0 : $hname created...
+
+# docker run -d --network yb_net  \
+#   --hostname nodeX --name nodeX \
+#   --ip 172.20.0.21              \
+#   $YB_IMAGE                             \
+#   yugabyted start --background=false --ui=true
 
 # use nodeY, to have a neutral node, 10 days idle, in the network, 
-docker run -d --network yb_net  \
-  --hostname nodeY --name nodeY \
-  --ip 172.20.0.22              \
-  $YB_IMAGE                     \
-  sleep 999999 
+# docker run -d --network yb_net  \
+#   --hostname nodeY --name nodeY \
+#   --ip 172.20.0.22              \
+#   $YB_IMAGE                     \
+#   sleep 999999 
 
 # health checks:
 # docker exec -it node2 yugabyted status 

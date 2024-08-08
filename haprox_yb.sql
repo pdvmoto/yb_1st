@@ -4,6 +4,10 @@
 # start: $ nohup haproxy -f haproxy_yb.cfg & (e.g. use this file as config), can run as nohup.
 #
 # notes: the check could be better, currently just check if metrics are behind port :900x/metrics
+# 
+# note: psql was on 26250 for CRDB, using bind stmnt  under "listen psql"
+# bind :26250
+# try replacing with 5433
 #
 
 global
@@ -20,7 +24,7 @@ defaults
     option              clitcpka
 
 listen psql
-    bind :26250
+    bind :5430
     mode tcp
     balance roundrobin
     #option httpchk GET /metrics
