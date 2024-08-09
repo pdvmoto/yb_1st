@@ -67,7 +67,7 @@ sleep 2
 #
 
 # nodenrs="2 3 4 5 6 7 8"
-  nodenrs=" 6 7 8 "
+  nodenrs="  "
 
 # create nodes, platform, install tools, but no db yet...
 for nodenr in $nodenrs
@@ -141,6 +141,10 @@ do
   # detach, or do it later, bcse takes 30sec: 
   # docker exec -it $hname startsadc.sh &
   
+  echo $hname : add do_stuff.sh or similar to help start all
+  docker cp do_stuff.sh    $hname:/usr/local/bin/do_stuff.sh
+  docker exec -it $hname chmod 755 /usr/local/bin/do_stuff.sh
+
   # more tooling... make sure the files are in working dir
 
   echo $hname : adding yugatool and enabling ysql_bench...
@@ -223,13 +227,17 @@ done
 
 # use nodeX, to have a neutral node in the network, 
 
-$hname=nodeX
+# attempt at mulitple start-commands, to start sadc and ashloop in background, 
+# not working yet..
+# docker run -d --network yb_net --hostname nodeX --name nodeX yugabytedb/yugabyte:2.21.1.0-b271  sh -c " echo ` exec /usr/local/bin/do_stuff.sh ` > /var/log/start.log  && tail -f /dev/null" 
+ 
+hname=nodeX
 
 crenode=` \
   echo docker run -d --network yb_net        \
     --hostname $hname --name $hname          \
     $YB_IMAGE                                \
-    tail -f /dev/null `
+    sh -c ' echo \` exec /usr/local/bin/do_stuff.sh \` > /var/log/start.log  && tail -f /dev/null\' `
 
   echo $hname ... creating container:
   echo $crenode
@@ -276,6 +284,10 @@ crenode=` \
   # detach, or do it later, bcse takes 30sec: 
   # docker exec -it $hname startsadc.sh &
   
+  echo $hname : add do_stuff.sh or similar to help start all
+  docker cp do_stuff.sh    $hname:/usr/local/bin/do_stuff.sh
+  docker exec -it $hname chmod 755 /usr/local/bin/do_stuff.sh
+
   # more tooling... make sure the files are in working dir
 
   echo $hname : adding yugatool and enabling ysql_bench...

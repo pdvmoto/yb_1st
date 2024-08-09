@@ -35,7 +35,7 @@ echo
 echo ---- waiting for 00 to start at precise timing------
 echo
 
- while expr `date +%S` % 30  != 0 ; do echo `date`  ; sleep 1 ; done 
+ while expr `date +%S` % 10  != 0 ; do echo `date`  ; sleep 1 ; done 
 
 echo `date` $0 : we got to 00, ready to start sadc...,
 
