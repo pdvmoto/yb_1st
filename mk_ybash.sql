@@ -130,6 +130,34 @@ notes:
     - needs to be reset from time 2time..
     - contains cumulative values, better to sample every 15 min or so, and keep data with sample-time.
 
+-- notes on grafana ..
+
+how to graphana..
+Add dashboard, add visualization, query => builder, and paste the SQL, 
+with a time-component as first field..
+
+Queries like these work:
+
+select /* Graph01: w_ev_class * /  date_trunc( 'seconds' , sample_time) as dt 
+, sum ( case a.wait_event_class when 'YSQLQuery' then 1 else 0 end ) as YQry
+, sum ( case a.wait_event_class when 'Common' then 1 else 0 end ) as Common
+, sum ( case a.wait_event_class when 'TServerWait' then 1 else 0 end ) as TServer
+, sum ( case a.wait_event_class when 'TabletWait' then 1 else 0 end ) as TabletWait
+, sum ( case a.wait_event_class when 'Consensus' then 1 else 0 end ) as Consensus
+, sum ( case a.wait_event_class when 'Client' then 1 else 0 end ) as Cliet
+, sum ( case a.wait_event_class when 'RocksDB' then 1 else 0 end ) as RocksDB
+from ybx_ash a
+group by 1 
+
+select /* Graph01: w_ev_Type * / date_trunc( 'seconds' , sample_time) as dt 
+, sum ( case a.wait_event_type when 'Cpu' then 1 else 0 end ) as CPU
+, sum ( case a.wait_event_type when 'WaitOnCondition' then 1 else 0 end ) as WonCond
+, sum ( case a.wait_event_type when 'Extension' then 1 else 0 end ) as Extens
+, sum ( case a.wait_event_type when 'DiskIO' then 1 else 0 end ) as DiskIO
+, sum ( case a.wait_event_type when 'Client' then 1 else 0 end ) as Client
+, sum ( case a.wait_event_type when 'Network' then 1 else 0 end ) as Network
+from ybx_ash a
+
 blog -- -- - -
 
 title: logging performance-information in a distributed database.
