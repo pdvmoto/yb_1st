@@ -20,7 +20,7 @@ do
   echo starting $node
 
   docker start $node
-  sleep 2
+  sleep 1
 
   # remove socket (if exists...)
   cat <<EOF | docker exec -i $node sh
@@ -42,8 +42,8 @@ EOF
 
   echo .
 
-  docker exec -it $node startsadc.sh & 
-  docker exec -it $node st_ashloop.sh &
+  docker exec -it $node startsadc.sh  
+  docker exec -it $node st_ashloop.sh 
 
 done
 

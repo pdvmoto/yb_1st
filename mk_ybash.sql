@@ -351,24 +351,43 @@ create table ybx_ash_evlst (
 
 /*  ****** work in progress ******** 
 
-CREATE TABLE ybx_table (
-  id bigint GENERATED ALWAYS AS IDENTITY primary key, -- find pk later
-  logged_host text not null,
-  logged_dt   timestamptz not null default now()  -- signal first find
-  gone_time timestamptz,                          -- use to signal removal 
-  rel_iod
-	table_id text NULL,
-	table_type text NULL,
-	namespace_name text NULL,
-	ysql_schema_name text NULL,
-	table_name text NULL,
+-- log table-size info, and only update if something changes..
+-- insert if not exist..
+-- upate if size_bytes or num-tablets is changed
+-- gone_dt if not-found in pg_class
+
+*/
+
+\echo .
+\echo ybx_tablog : logging data on tables, indexes...
+\echo .
+
+CREATE TABLE ybx_tablog (
+  id bigint GENERATED ALWAYS AS IDENTITY primary key  -- find pk later
+, logged_host       text not null                     -- just information.. 
+, found_dt          timestamptz not null default now() -- signal first find
+, gone_dt           timestamptz                       -- use to signal removal 
+, rel_oid           oid
+,	table_id          text                              -- the yb uuid
+, schemaname        text                              -- names etc in case it gets dropped
+, tableowner        text
+, relname           text
+, relkind           text
+, size_bytes        bigint
+, num_tablets       bigint
+, num_hash_key_columns bigint
 )
 split into 1 tablets ;
-* ***** */
+
+create index ybx_tablog_oid on ybx_tablog ( rel_oid, found_dt ) split into 1 tablets ;
+create index ybx_tablog_dt  on ybx_tablog ( found_dt asc ) split into 1 tablets; 
+
+/* ***** */
 
 
 /* *****************************************************************/
--- table to collect tablet info...
+
+\echo ybx_tblt:  table to collect tablet info...
 
 -- DROP TABLE ybx_tblt;
 
@@ -390,6 +409,8 @@ split into 1 tablets ;
 
 -- collect events, using functions
 
+\echo .
+\echo mk_ybash.sql: now the funcitons --------------------- 
 
 /* *****************************************************************
 
@@ -714,6 +735,108 @@ END; -- function ybx_get_tblts: to get_tablets
 $$
 ;
 
+/* ***************************************
+
+function : ybx_get_tablog();
+
+collect ybx_tablog to check sizes and nr tablets
+returns total nr of records inserted and updated
+
+todo: check.. 
+
+*/
+
+CREATE OR REPLACE FUNCTION ybx_get_tablog()
+  RETURNS bigint
+  LANGUAGE plpgsql
+AS $$
+DECLARE
+  nr_rec_processed bigint         := 0 ;
+  n_created     bigint            := 0 ;
+  n_updated     bigint            := 0 ;
+  n_gone        bigint            := 0 ;
+  start_dt      timestamp         := clock_timestamp();
+  end_dt        timestamp         := now() ;
+  duration_ms   double precision  := 0.0 ;
+  retval        bigint            := 0 ;
+  cmmnt_txt     text              := ' ' ;
+BEGIN
+
+-- insert any new-found tablets on this node...
+with h as ( select ybx_get_host () as host )
+insert into ybx_tablog (
+  logged_host ,
+  rel_oid , 
+  table_id , 
+  schemaname ,
+  tableowner ,
+  relname ,
+  relkind ,
+  num_tablets ,
+  num_hash_key_columns ,
+  size_bytes 
+)
+select
+  h.host  ,
+  t.oid   ,
+  t.table_id ,
+  t.schemaname ,
+  t.tableowner ,
+  t.relname ,
+  t.relkind ,
+  t.num_tablets ,
+  t.num_hash_key_columns ,
+  t.size_bytes
+  FROM ybx_tblinfo t, h
+  where 1=1
+  and t.size_bytes is not null
+  and t.num_hash_key_columns is not null
+  and t.num_tablets is not null 
+  and not exists 
+      ( select 'x' from ybx_tablog l
+        where 1=1
+          and t.oid =  l.rel_oid     -- assume oid is the identifying item
+          and t.size_bytes            = l.size_bytes -- only if nothing changed
+          and t.num_tablets           =  l.num_tablets
+          and t.num_hash_key_columns  = l.num_hash_key_columns
+      ) ;
+
+GET DIAGNOSTICS n_created := ROW_COUNT;
+retval := retval + n_created ;
+RAISE NOTICE 'ybx_get_tablog() created : % tablogs' , n_created ; 
+
+-- update the gone_date if tablet no longer present..
+
+-- signal gone_date if ... gone
+with h as ( select ybx_get_host () as host )
+update ybx_tablog t set gone_dt = start_dt 
+where 1=1 
+and t.gone_dt  is null                   -- no end time yet
+and not exists (                         -- no more class
+  select 'x' from pg_class c
+  where   c.oid  =  t.rel_oid 
+  )
+;
+
+GET DIAGNOSTICS n_gone := ROW_COUNT;
+retval := retval + n_gone ;
+
+duration_ms := EXTRACT ( MILLISECONDS from ( clock_timestamp() - start_dt ) ) ; 
+
+RAISE NOTICE 'ybx_get_tablog() gone    : % tabs'  , n_gone ; 
+RAISE NOTICE 'ybx_get_tablog() elapsed : % ms'     , duration_ms ; 
+
+cmmnt_txt := 'created: ' || n_created || ', gone: ' || n_gone || '.' ;
+
+insert into ybx_log ( logged_dt, host,            component,        ela_ms,      info_txt )
+       select clock_timestamp(), ybx_get_host(), 'ybx_get_tablogs', duration_ms, cmmnt_txt ; 
+
+  -- end of fucntion..
+  return retval ;
+
+END; -- function ybx_get_tablog: to log table-size and num_tablets
+$$
+;
 
 /* *****************************************************************
 
