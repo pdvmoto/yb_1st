@@ -27,6 +27,8 @@ alias   ybtbts='yb-admin -master_addresses $MASTERS list_tablets '
 
 alias      ybt='yugatool -m $MASTERS '
 
+alias    yboot='yugabyted stop; sleep 5 ; yugabyted start '
+
 # set to bxlls timezone
 TZ='Europe/Brussels'; export TZ
 

@@ -17,7 +17,7 @@
 #
 
 # a bit quick, during benchmarkng, but set to 5 or 10min later
-N_SECS=180
+N_SECS=150
 F_SEM=/tmp/ybx_ash_off.sem
 
 while true 

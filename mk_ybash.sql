@@ -1,4 +1,5 @@
-/*
+
+/* 
 
 file: mk_ybash.sql: functions and tables for yb_ash and pg_stat data.
  - choose to store first + on every node, 
@@ -16,6 +17,8 @@ usage:
  - optional: add \i mk_ashvws.sql for the gv views from Frankc.
 
 todo, high level.
+ - save table-sizes: pg_tables, oid, dt_found, size-mb, table_uuid [, num_tablets..]
+    but only save new records when data changes.. 
  - blog: save data in tables, then qry if needed.. only pick most recent data from mem.
    - add code + examples, notably interval
  - test with masters on separate nodes, see where activity goes.
@@ -138,7 +141,7 @@ with a time-component as first field..
 
 Queries like these work:
 
-select /* Graph01: w_ev_class * /  date_trunc( 'seconds' , sample_time) as dt 
+select  date_trunc( 'seconds' , sample_time) as dt 
 , sum ( case a.wait_event_class when 'YSQLQuery' then 1 else 0 end ) as YQry
 , sum ( case a.wait_event_class when 'Common' then 1 else 0 end ) as Common
 , sum ( case a.wait_event_class when 'TServerWait' then 1 else 0 end ) as TServer
@@ -149,7 +152,7 @@ select /* Graph01: w_ev_class * /  date_trunc( 'seconds' , sample_time) as dt
 from ybx_ash a
 group by 1 
 
-select /* Graph01: w_ev_Type * / date_trunc( 'seconds' , sample_time) as dt 
+select  date_trunc( 'seconds' , sample_time) as dt 
 , sum ( case a.wait_event_type when 'Cpu' then 1 else 0 end ) as CPU
 , sum ( case a.wait_event_type when 'WaitOnCondition' then 1 else 0 end ) as WonCond
 , sum ( case a.wait_event_type when 'Extension' then 1 else 0 end ) as Extens
@@ -158,97 +161,7 @@ select /* Graph01: w_ev_Type * / date_trunc( 'seconds' , sample_time) as dt
 , sum ( case a.wait_event_type when 'Network' then 1 else 0 end ) as Network
 from ybx_ash a
 
-blog -- -- - -
-
-title: logging performance-information in a distributed database.
-
-TL;DR: I choose to store the ASH data in tables, whereby every node logs its own data. To see the data, I query the tables with SQL.
-I tried to minimize additional inter-host communication, and avoid additional mechanisms like FDW or dedicated RPCs, while storing the data for possible later usage.
-The main disadvantages are... 
-1) There is insert activity, 
-2) Data is only available after insert-into-table, and thus depends on a sampling interval 
-and 3) There is incomplete logging when components in the postgres-layer get broken. 
-
-Background:
-I'm using Yugabyte, a distributed database, and I try to keep track the workload-history if you like, of the system. 
-PG and YB make some internal data available via views : pg_stat_statements, pg_stat_activity, yb_active_session_history and yb_local_tablets. 
-This data can help you find bottlenecks and hotspots in your system. 
-
-You can find the (first version of) ASH documentatin here:
-https://docs.yugabyte.com/preview/explore/observability/active-session-history/
-
-... move txt down a bit ...
-Franck Pachot then used the FDW and a Union-All to put the data in a single, unified view, which is explained and demonstrated here:
-https://dev.to/yugabyte/active-session-history-ash-in-yugabytedb-39ic
-
-Followed by a very cool visualization using grafana here:
-https://dev.to/yugabyte/find-hotspots-with-yugabyte-active-session-history-45db
-
-This data, and the concepts used by Franck will help you find bottlenecks and hotspots in your system.  I suspect other can build on his ideas to create all sorts of cool diagnostics tools.
-
-Now I also wanted to keep that ASH data for later analysis, so I could look back at Yesterday's problem, even though the buffers would not keep data that old, or even my servers might have been cycled.
-
-
-
-Per node data, needs to be unified.
-
-Yugabyte is a distributed database but the information from the views, active_session_history and pg_stats, is still "local" to each node, e.g. a node only sees and reports on its own status.
-
-To have a cluster-wide view, you need to query this data on every node, and somehow combine it.
-
-Franck solved that by using a Foreign-Data-Wrapper (FDW) to select the views from all remote nodes, and by doing a union-all on them. His gv$yb_active_session_history "fetches" all the data from all the nodes every time the view is queried. This also, currently, means the union-view becomes unusable when a node (part of the union-data in the view) is unresponsive or down.
-
-In this post I want to outline an alternative, where I try keep nodes working independently and only unite the data when needed, when I query it from the Table where I store it. 
-
-There are pros and cons to each approach.
-
-
-Storing data to Table, readably by any session.
-
-Instead of using FDW to query other nodes, I let each node store its own data.
-I insert the data from yb_active_session_history into a table, and add the host-name (node-name, server name, whichever is listed as host in select * from yb_servers() ;
-Sessions on other hosts will be able to see the data after commit, and it only needs the (postgres) SQL-interface to access the data.
-
-There are three other views for which I save the contents, the data of which I need later to join to the collectd ASH data: 
-yb_local_tablets
-pg_stat_statements
-pg_stat_activity.
-Each of these warrants a discussion on its own but that is out of scope now. I may come back to this in a later post, but first let me describe the concept in more detail.
-
-
-To capture the data, I created functions that insert the data from these views into (postgres)tables, and I make sure to skip existing data to prevent doubles. From the moment the data is inserted it is Readable by any connection with access to the tables.
-
-The interval with which data is logged is important, as it determines the timeliness, e.g. how fast the ASH-data becomes available to anyone who queries the tables. A short interval will cause some overhead, a long interal will hamper instant-diagnosis as we need to wait for data to get captured. I found an interval of 60 or 180 seconds to be manageable, but YMMV.
-
-I've constructed loop-shell scripts to do the capturing which can be run on each of the nodes. so far, each of the capture-functions runs in under 1 second, and doesnt seem to cause much overhead or hiccups.
-
-
-Pros and Cons.
-
-pro: Simple, existing tools.
-The big advantage (nr 1) I see is that there is no need for FDW and no mappings or imports of remote objects. 
-
-pro: Creation of a History.
-The other advantage (nr 2) is that the data is saved and kept over longer periods of time, and over server-reboots. This allows for post-mortem inspection of problems.
-
-pro: Robust execution, local to each node.
-The logging will not be affected by node-out, not even by temporary network-failings, as there is no connecting- or other dependency on other nodes in the cluster.. The logging will not be affected by node-out from peer-nodes, as there is no connecting- or other dependency on other nodes in the cluster.
-
-Note: at some point, I may also consider the monitoring/logging of node-connectivity, or node-outages. But that is out of scope for the moment.
-
-
-con: Insert is needed before the data is visible, and thus we create additional table-insert activity. I have not tested this yet on significantly large machines or highly active machines.
-
-con: Need to wait for the insert to happen, The data in the views is instantly visible on the nodes. But in the worst case, the table-data needs to wait for the sample-interval before it can be seen.
-
-con: Depends on the full-stack of a mostly functional YB-database: It needs the postgres layer to run the inserts, and the TSever to process the data before it is visible or usable by others.
-
-
-Concluding remarks:
-
-I will try to create a repository with readable and usable demo-code (link when available) and I'm open to discussion of the topic and to examine pros and cons.
-
- -- -- -- 
+-- -- -- 
 blog 2
 
 To save the data to disk, we looked first at yb_ash.
@@ -262,12 +175,7 @@ we add a node-name (host), and a capture-time.
 we also have a gone-time field, that can is used to detect tablets that have move.
 
 
-
-
-
-
-
-*/ 
+*/  
 
 -- need function to get hostname, faster if SQL function ?
 
@@ -282,11 +190,14 @@ $$ LANGUAGE sql;
   DROP TABLE ybx_ash;
   DROP TABLE ybx_pgs_stmt;
   DROP TABLE ybx_pgs_act;
+  DROP TABLE ybx_rel;
   DROP TABLE ybx_tblt;
   DROP TABLE ybx_ash_evlst;
 */
 
 /* geneate ash reps */
+
+\echo ybx_ash_rep and ybx_log, used for reporting
 
 create table ybx_ash_rep (
  id           bigint        generated always as identity
@@ -310,6 +221,7 @@ create table ybx_log (
   , constraint ybx_log_pk primary key (logged_dt asc, id  asc)  
   ) ;
  
+\echo ybx_ash : the main table
 
 CREATE TABLE ybx_ash (
   id                    bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -339,6 +251,8 @@ create index ybx_ash_key on ybx_ash
 create index ybx_ash_host on ybx_ash 
   ( host, sample_time asc ) ; 
 
+
+\echo ybx_pgs_stmt, for pg_stat_statements. needs updates...
 
 -- DROP TABLE ybx_pgs_stmt;
 
@@ -379,6 +293,8 @@ split into 1 tablets ;
 -- Drop table
 -- DROP TABLE ybx_pgs_act;
 
+\echo ybx_pgs_act: pg_stat_activity, almost equivalent of ps-ef
+
 CREATE TABLE ybx_pgs_act (
   id bigint GENERATED ALWAYS AS IDENTITY, -- find pk later
   host text not null,
@@ -418,6 +334,8 @@ split into 1 tablets ;
 
 -- drop table ybx_evlst ; 
 
+\echo ybx_ash_evlst: eventlist, keep track of which eventw we know-of
+
 create table ybx_ash_evlst (
   wait_event_component    text not null
 , wait_event_type         text
@@ -429,7 +347,27 @@ create table ybx_ash_evlst (
 , constraint ybx_ash_evlst_pk primary key ( wait_event_component asc, wait_event )
 );
 
+--- collect Table pg_class, relname, info...
 
+/*  ****** work in progress ******** 
+
+CREATE TABLE ybx_table (
+  id bigint GENERATED ALWAYS AS IDENTITY primary key, -- find pk later
+  logged_host text not null,
+  logged_dt   timestamptz not null default now()  -- signal first find
+  gone_time timestamptz,                          -- use to signal removal 
+  rel_iod
+	table_id text NULL,
+	table_type text NULL,
+	namespace_name text NULL,
+	ysql_schema_name text NULL,
+	table_name text NULL,
+)
+split into 1 tablets ;
+* ***** */
+
+
+/* *****************************************************************/
 -- table to collect tablet info...
 
 -- DROP TABLE ybx_tblt;
