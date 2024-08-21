@@ -380,7 +380,7 @@ CREATE TABLE ybx_tablog (
 split into 1 tablets ;
 
 create index ybx_tablog_oid on ybx_tablog ( rel_oid, found_dt ) split into 1 tablets ;
-create index ybx_tablog_dt  on ybx_tablog ( found_dt asc ) split into 1 tablets; 
+create index ybx_tablog_dt  on ybx_tablog ( found_dt asc ) ; 
 
 /* ***** */
 
