@@ -76,6 +76,17 @@ next:
  - use hostnames ?
  - test procstat
 
+Create own image with tools:
+ - run node2 with all tools installed, but no yb started yet.
+ - create an image from it:  
+    $ docker commit node2 yb_plus_tools 
+ - use the new image, using various mappings
+    $ docker run -d --network yb_net --hostname node9 --name node9 \
+            -p5439:5433 -p7009:7000 -p9009:9000 -p13439:13433 -p15439:15433 \
+            yb_plus_tools \
+            bash -xc 'do_stuff.sh ; tail -f /dev/null' 
+ - notice: there is no yb-start command in there yet: could to include that in do_stuff.sh, only $hname is node-specific.
+
 
 -- -- -- docker-compose.yaml for grafana dashboard -- -- --- -- -- 
 name: ${COMPOSE_PROJECT_NAME}
