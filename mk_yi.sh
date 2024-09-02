@@ -45,10 +45,13 @@
 # YB_IMAGE=yugabytedb/yugabyte:2.20.1.3-b3
 # YB_IMAGE=yugabytedb/yugabyte:2.21.0.0-b545
 # YB_IMAGE=yugabytedb/yugabyte:2.21.1.0-b271
-# YB_IMAGE=yugabytedb/yugabyte:2024.1.1.0-b137
+YB_IMAGE=yugabytedb/yugabyte:2024.1.1.0-b137
+
+# 26 Aug, didnt have yb_ash view ?
+# YB_IMAGE=yugabytedb/yugabyte:2.20.6.0-b66
 
 # latest was broken on 21-aug-2024?
-YB_IMAGE=yugabytedb/yugabyte:latest
+# YB_IMAGE=yugabytedb/yugabyte:latest
 
 # get some file to log stmnts, start simple
 LOGFILE=mk_nodes.log
@@ -70,7 +73,7 @@ sleep 2
 #  - how to get to K8s ??
 #
 
-  nodenrs="2 3 4"
+  nodenrs="2 3 4 "
 # nodenrs="  "
 
 echo `date` $0 : ---- creating cluster for nodes : $nodenrs -------
@@ -149,8 +152,12 @@ do
   # docker exec -it $hname startsadc.sh &
   
   echo $hname : add do_stuff.sh or similar to help start all
-  docker cp do_stuff.sh    $hname:/usr/local/bin/do_stuff.sh
+  docker cp do_stuff.sh     $hname:/usr/local/bin/do_stuff.sh
   docker exec -it $hname chmod 755 /usr/local/bin/do_stuff.sh
+
+  echo $hname : add yb_boot.sh or similar to boot ybdb
+  docker cp yb_boot.sh      $hname:/usr/local/bin/yb_boot.sh
+  docker exec -it $hname chmod 755 /usr/local/bin/yb_boot.sh
 
   # more tooling... make sure the files are in working dir
 

@@ -944,3 +944,5 @@ select ybx_get_tblts () as nr_tablets_processed ;
 
 select count (*) tablets_detected, host from ybx_tblt group by host ;
 
+select ybx_get_tablog() tablogs;
+

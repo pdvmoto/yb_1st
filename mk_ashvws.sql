@@ -68,6 +68,9 @@ select format('create or replace view public."gv$%2$s" as %1$s',
 ) from views, yb_servers() group by views.foreign_table_name ;
 \gexec
 
+-- add short name for easy
+create view gvlt as select * from gv$yb_local_tablets ;
+
 drop function if exists gv$ash;
 create or replace function public.gv$ash(seconds interval default '60 seconds')
 RETURNS TABLE (
@@ -111,8 +114,8 @@ $$ language sql;
 
 select * from gv$ash();
 
--- The user and password are hardcoded here (yugabyte), but you can create your own user mapping to each server.
 
+-- The user and password are hardcoded here (yugabyte), but you can create your own user mapping to each server.
 
 select ' gv$ objects created for shared-views..... ' ; 
 

@@ -31,11 +31,11 @@ echo 4. check nohup, which may or may not work.
 echo
 echo -- -- -- -- -- -- 
 echo
-echo
-echo ---- waiting for 00 to start at precise timing------
-echo
 
-while expr `date +%S` % 10  != 0 ; do echo `date`  ; sleep 1 ; done 
+# echo ---- waiting for 00 to start at precise timing------
+# echo
+# 
+# while expr `date +%S` % 10  != 0 ; do echo `date`  ; sleep 1 ; done 
 
 # echo `date` $0 : we got to 00, ready to start sadc...,
 
