@@ -11,9 +11,8 @@ usage:
  - verify the view yb_active_session_history is present
  - run script \i mk_ybash.sql: to create functions + tables, 
    check for erros in case DDL changes
- - test using do_ybash.sql : can all nodes collect data ?
  - schedule for regular collection, e.g. 1min, 10min.: do_ashloop.sh
- - optional: check to have yb_init.sql done, reate helper-functions (cnt)
+ - optional: check to have yb_init.sql done, create helper-functions (cnt)
  - optional: add \i mk_ashvws.sql for the gv views from Frankc.
 
 todo, high level.
@@ -40,7 +39,6 @@ todo:
     it relects nr tablest on startup of the tserver try this with auto-split, and see.
  - invalid byte sequence: some type conversion in get_ash ?
  - at some points, inserts of 10K records.. Why ??
- - check TEST_ash flag.. try out ?
  - check load of metrics-curling.. http://localhost:9004/prometheus-metrics
  - spot ClientRead as passive status ?  : no proof.. forget it for now
  - test on colocated db: only 1 tablet, and 1 table-name. complicated..?  hmm
