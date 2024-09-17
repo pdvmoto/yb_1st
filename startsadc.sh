@@ -39,7 +39,7 @@ echo
 
 # echo `date` $0 : we got to 00, ready to start sadc...,
 
-nohup /usr/lib64/sa/sa1 60 6000000 >> sadc.log 2>&1 &
+nohup /usr/lib64/sa/sa1 300 6000000 >> sadc.log 2>&1 &
 
 # may also need: /usr/lib64/sa/sadc -F -L -S DISK 600 30 - 
 

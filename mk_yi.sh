@@ -74,7 +74,7 @@ sleep 2
 #  - how to get to K8s ??
 #
 
-  nodenrs="2 3 4 "
+  nodenrs="2 3 4 5"
 # nodenrs="  "
 
 echo `date` $0 : ---- creating cluster for nodes : $nodenrs -------

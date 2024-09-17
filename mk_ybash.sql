@@ -17,7 +17,7 @@ usage:
 
 todo, high level.
  - save table-sizes: pg_tables, oid, dt_found, size-mb, table_uuid [, num_tablets..]
-    but only save new records when data changes.. 
+    but only save new records when data changes.. => ybx_tablogs is too slow.. reduce Freq..
  - blog: save data in tables, then qry if needed.. only pick most recent data from mem.
    - add code + examples, notably interval
  - test with masters on separate nodes, see where activity goes.
@@ -35,6 +35,8 @@ todo, high level.
  - detect tablets on non-existing nodes.. close them..  (gone_time, closed by self or other...)? 
 
 todo:
+ - some fuctions a bit slow, find out why.
+ - isolate pg_cron items in separate file, in case not present
  - num tablets : select * from yb_table_properties(16642 ) is wrong.., 
     it relects nr tablest on startup of the tserver try this with auto-split, and see.
  - invalid byte sequence: some type conversion in get_ash ?
@@ -233,6 +235,7 @@ CREATE TABLE ybx_ash (
 	top_level_node_id     uuid NULL,
 	query_id              int8 NULL,
 	ysql_session_id       int8 NULL,
+	pid                   int8 NULL,
 	client_node_ip        text NULL,
 	wait_event_aux        text NULL,
 	sample_weight         float4 NULL,
@@ -380,6 +383,7 @@ split into 1 tablets ;
 create index ybx_tablog_oid on ybx_tablog ( rel_oid, found_dt ) split into 1 tablets ;
 create index ybx_tablog_dt  on ybx_tablog ( found_dt asc ) ; 
 
+-- create index ybx_tablog_all on ybx_tablog ( rel_oid, size_bytes, num_tablets, num_hash_key_columns ) ; 
 /* ***** */
 
 
@@ -448,6 +452,7 @@ insert into ybx_ash  (
 , top_level_node_id 
 , query_id 
 , ysql_session_id  -- find related info
+, pid
 , client_node_ip 
 , wait_event_aux
 , sample_weight 
@@ -463,7 +468,8 @@ select
 , a.wait_event 
 , a.top_level_node_id 
 , a.query_id 
-, a.ysql_session_id  -- find related info
+, 0 -- a.ysql_session_id  -- find related info
+, a.pid
 , a.client_node_ip 
 , a.wait_event_aux
 , a.sample_weight 
@@ -918,6 +924,47 @@ select (select count (*) evlst from ybx_ash_evlst  ) evlst ;
 select ybx_get_evlst() ; 
 
 select (select count (*) evlst from ybx_ash_evlst  ) evlst ;
+
+-- -- -- -- -- -- -- --
+-- function to test cron, included here bcse cront would help collect ash
+-- will sleep for x seconds, dflt 1
+
+CREATE OR REPLACE FUNCTION ybx_testcron( )
+  RETURNS bigint
+  LANGUAGE plpgsql
+AS $$
+DECLARE
+  start_dt      timestamp         := clock_timestamp(); 
+  end_dt        timestamp         := now() ;
+  hostnm        text              := ybx_get_host() ;
+  duration_ms   double precision  := 0.0 ;
+  nr_rec_processed bigint         := 0 ;
+  retval        bigint            := 0 ;
+  cmmnt_txt     text              := 'Event found ' ;
+BEGIN
+
+cmmnt_txt := 'testing cron on: ' || hostnm 
+                 || ', at: ' || start_dt::text ;
+
+-- select pg_sleep ( 1 ) into retval ; 
+
+duration_ms := EXTRACT ( MILLISECONDS from ( clock_timestamp() - start_dt ) ) ;
+
+insert into ybx_log ( logged_dt, host,   component,      ela_ms,      info_txt )
+       select clock_timestamp(), hostnm, 'ybx_testcron', duration_ms, cmmnt_txt ;
+
+-- end of fucntion..
+return retval ;
+
+END; -- ybx_testcron, to incrementally populate table
+$$
+; 
+
+-- check 2 sec, find results in ybx_log
+select ybx_testcron ( ) as testcron ;
+
+-- schedule a job..
+select cron.schedule ('* * * * *', $$ select ybx_testcron(); $$) ;
 
 -- call functions and compare counts to test
 
