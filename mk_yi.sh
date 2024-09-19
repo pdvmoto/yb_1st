@@ -40,7 +40,7 @@
 
 # choose an image
 # YB_IMAGE=yugabytedb/yugabyte:latest
-# YB_IMAGE=yugabytedb/yugabyte:2.19.0.0-b190        \
+# YB_IMAGE=yugabytedb/yugabyte:2.19.0.0-b190        
 # YB_IMAGE=yugabytedb/yugabyte:2.20.1.0-b97
 # YB_IMAGE=yugabytedb/yugabyte:2.20.1.3-b3
 # YB_IMAGE=yugabytedb/yugabyte:2.21.0.0-b545
@@ -132,6 +132,8 @@ do
   echo $hname : adding ybflags.conf
   docker cp ybflags.conf $hname:/home/yugabyte/
 
+  # note: repeating steps for several (7 ?) files.. need function?
+
   echo $hname : adding psg ...
   docker cp `which psg`     $hname:/usr/local/bin/psg
   docker exec -it $hname chmod 755 /usr/local/bin/psg
@@ -182,7 +184,7 @@ EOF
   echo $hname : tools installed.
   echo .
 
-  sleep 2
+  sleep 1
 
 done
 # for all nodes: node-created
