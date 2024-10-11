@@ -41,9 +41,10 @@ EOF
   echo `date` $0 : push start-process to background to avoid wait-loops ...
 
   echo .
+  echo `date` $0 : skip sadc and ashloop for efficiency.
 
-  docker exec -it $node startsadc.sh  
-  docker exec -it $node st_ashloop.sh 
+  # docker exec -it $node startsadc.sh  
+  # docker exec -it $node st_ashloop.sh 
 
 done
 
