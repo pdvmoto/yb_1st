@@ -2,7 +2,6 @@
 /* 
 
 file: mk_ybash.sql: functions and tables for yb_ash and pg_stat data.
- - note: this one now adjusted or pg15.. for v11: see ..._v11.sql
  - choose to store first + on every node, 
    we take  insert- and select-rpc overhead..
  - useing sql-funciton for detecting hostname
@@ -17,9 +16,8 @@ usage:
  - optional: add \i mk_ashvws.sql for the gv views from Frankc.
 
 todo, high level.
- - for V15, re-check PKs, notably ysql_dbid ? check on insert-key?
  - save table-sizes: pg_tables, oid, dt_found, size-mb, table_uuid [, num_tablets..]
-    but only save new records when data changes.. => ybx_tablogs is too slow.. reduce Freq..
+    but only save new records when data changes.. 
  - blog: save data in tables, then qry if needed.. only pick most recent data from mem.
    - add code + examples, notably interval
  - test with masters on separate nodes, see where activity goes.
@@ -37,8 +35,6 @@ todo, high level.
  - detect tablets on non-existing nodes.. close them..  (gone_time, closed by self or other...)? 
 
 todo:
- - some fuctions a bit slow, find out why.
- - isolate pg_cron items in separate file, in case not present
  - num tablets : select * from yb_table_properties(16642 ) is wrong.., 
     it relects nr tablest on startup of the tserver try this with auto-split, and see.
  - invalid byte sequence: some type conversion in get_ash ?
@@ -78,7 +74,6 @@ todo on tablets: improve monitoring and logic
  - yb_local_tablets: state=ok,suspect,gone, depending on node and last-seen?
  - store class-oid of table with tablets (why? not urgen?)
  - find Master-tserver (node or uuid) for tablet, how?
- - yb_local_tablets: leader, boolean, needed. how to Find it ?
 
 more todo
  - get 1 benchmark, and test.., need tables of 2G or more to really hammer..
@@ -227,23 +222,22 @@ create table ybx_log (
 \echo ybx_ash : the main table
 
 CREATE TABLE ybx_ash (
-    id                    bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id                    bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	host                  text NULL,
 	sample_time           timestamptz  NULL,
 	root_request_id       uuid NULL,
-	rpc_request_id        bigint default 0,
+	rpc_request_id        int8 default 0,
 	wait_event_component  text NULL,
 	wait_event_class      text NULL,
 	wait_event            text NULL,
 	top_level_node_id     uuid NULL,
-	query_id              bigint NULL,
-	ysql_session_id       int8 NULL, -- no longer needed ? 
-	pid                   int8 NULL,
+	query_id              int8 NULL,
+	ysql_session_id       int8 NULL,
+	pid                   int8 NULL,  -- pid only for testing
 	client_node_ip        text NULL,
 	wait_event_aux        text NULL,
-	sample_weight         real NULL,
-	wait_event_type       text NULL,
-    ysql_dbid              oid NULL
+	sample_weight         float4 NULL,
+	wait_event_type       text NULL
   --, constraint ybx_ash_pk primary key ( id ) 
   --, constraint ybx_ash_pk primary key ( host HASH, sample_time ASC, root_request_id ASC, rpc_request_id ASC, wait_event asc) 
 ) 
@@ -267,22 +261,15 @@ CREATE TABLE ybx_pgs_stmt (
   created_dt          timestamptz default now(),
 	userid              oid NULL,
 	dbid                oid NULL,
-    toplevel            boolean NULL, -- check null
-	queryid             bigint NULL,
+	queryid             int8 NULL,
 	query               text NULL,
-    plans               bigint NULL,
-    total_plan_time     float8,
-      min_plan_time     float8, 
-      max_plan_time     float8, 
-     mean_plan_time     float8, 
-   stddev_plan_time     float8, 
 	calls               int8 NULL,
-    total_exec_time     float8,
-      min_exec_time     float8,
-      max_exec_time     float8,
-     mean_exec_time     float8,
-   stddev_exec_time     float8,
-    "rows"              bigint,
+	total_time          float8 NULL,
+	min_time            float8 NULL,
+	max_time            float8 NULL,
+	mean_time           float8 NULL,
+	stddev_time         float8 NULL,
+	"rows"              int8 NULL,
 	shared_blks_hit     int8 NULL,
 	shared_blks_read    int8 NULL,
 	shared_blks_dirtied int8 NULL,
@@ -295,17 +282,6 @@ CREATE TABLE ybx_pgs_stmt (
 	temp_blks_written   int8 NULL,
 	blk_read_time       float8 NULL,
 	blk_write_time      float8 NULL,
-    wal_records         bigint, 
-    wal_fpi             bigint,
-    wal_bytes           numeric,  -- supposedly large and exact
-    jit_functions       bigint,
-    jit_generation_time float8,
-    jit_inlining_count  bigint,
-    jit_inlining_time      float8,
-    jit_optimization_count bigint,
-    jit_optimization_time  float8,
-    jit_emission_count     bigint,
-    jit_emission_time      float8,
 	yb_latency_histogram jsonb NULL
 , constraint ybx_pgs_stmt_pk primary key  ( host, dbid, userid, queryid )
 )
@@ -322,31 +298,29 @@ CREATE TABLE ybx_pgs_act (
   id bigint GENERATED ALWAYS AS IDENTITY, -- find pk later
   host text not null,
   sample_time timestamptz not null,
-	datid           oid         NULL,
-	datname         name        NULL,
-	pid             int4        NULL,
-    leader_pid      int4        NULL,
-	usesysid        oid         NULL,
-	usename         name        NULL,
-	application_name text       NULL,
-	client_addr     inet NULL,
+	datid oid NULL,
+	datname name NULL,
+	pid int4 NULL,
+	usesysid oid NULL,
+	usename name NULL,
+	application_name text NULL,
+	client_addr inet NULL,
 	client_hostname text NULL,
-	client_port     int4 NULL,
-	backend_start   timestamptz NULL,
-	xact_start      timestamptz NULL,
-	query_start     timestamptz NULL,
-	state_change    timestamptz NULL,
+	client_port int4 NULL,
+	backend_start timestamptz NULL,
+	xact_start timestamptz NULL,
+	query_start timestamptz NULL,
+	state_change timestamptz NULL,
 	wait_event_type text NULL,
-	wait_event      text NULL,
-	state           text NULL,
-	backend_xid     xid NULL,
-	backend_xmin    xid NULL,
-    query_id        bigint NULL, 
-	query           text NULL,
-	backend_type    text NULL,
-	catalog_version         int8 NULL,
-	allocated_mem_bytes     int8 NULL,
-	rss_mem_bytes   int8 NULL,
+	wait_event text NULL,
+	state text NULL,
+	backend_xid xid NULL,
+	backend_xmin xid NULL,
+	query text NULL,
+	backend_type text NULL,
+	catalog_version int8 NULL,
+	allocated_mem_bytes int8 NULL,
+	rss_mem_bytes int8 NULL,
 	yb_backend_xid uuid NULL
   -- normally, host+pid are unique, only 1 qry per pid ?
   --, constraint ybx_pgs_act_pk primary key  ( id ) 
@@ -407,7 +381,6 @@ split into 1 tablets ;
 create index ybx_tablog_oid on ybx_tablog ( rel_oid, found_dt ) split into 1 tablets ;
 create index ybx_tablog_dt  on ybx_tablog ( found_dt asc ) ; 
 
--- create index ybx_tablog_all on ybx_tablog ( rel_oid, size_bytes, num_tablets, num_hash_key_columns ) ; 
 /* ***** */
 
 
@@ -476,12 +449,11 @@ insert into ybx_ash  (
 , top_level_node_id 
 , query_id 
 , ysql_session_id  -- find related info
-, pid
+, pid              -- only for testing
 , client_node_ip 
 , wait_event_aux
 , sample_weight 
 , wait_event_type 
-, ysql_dbid
 )
 select 
   h.host as host
@@ -494,12 +466,11 @@ select
 , a.top_level_node_id 
 , a.query_id 
 , 0 -- a.ysql_session_id  -- find related info
-, a.pid
+, a.pid              -- only testing..
 , a.client_node_ip 
 , a.wait_event_aux
 , a.sample_weight 
 , a.wait_event_type 
-, a.ysql_dbid
 from yb_active_session_history a , h h
 where not exists ( select 'x' from ybx_ash b 
                    where b.host            = h.host 
@@ -521,21 +492,14 @@ insert into ybx_pgs_stmt (
   host ,   -- check if qryid is same on host
 	userid , 
 	dbid , 
-    toplevel ,
 	queryid , 
 	query , 
-    plans ,
-    total_plan_time ,
-      min_plan_time ,
-      max_plan_time, 
-     mean_plan_time ,
-   stddev_plan_time ,
 	calls , 
-	total_exec_time ,
-  	  min_exec_time  ,
-	  max_exec_time  ,
-	 mean_exec_time ,
-   stddev_exec_time  ,
+	total_time ,
+	min_time  ,
+	max_time  ,
+	mean_time ,
+	stddev_time  ,
 	"rows"  ,
 	shared_blks_hit  ,
 	shared_blks_read  ,
@@ -549,38 +513,20 @@ insert into ybx_pgs_stmt (
 	temp_blks_written ,
 	blk_read_time ,
 	blk_write_time ,
-    wal_records ,
-    wal_fpi ,
-    wal_bytes ,
-    jit_functions ,
-    jit_generation_time ,
-    jit_inlining_count ,
-    jit_inlining_time ,
-    jit_optimization_count ,
-    jit_optimization_time ,
-    jit_emission_count ,
-    jit_emission_time ,
 	yb_latency_histogram 
 )
 select 
   h.host,
 	userid , 
 	dbid , 
-    toplevel ,
 	queryid , 
 	query , 
-    plans ,
-    total_plan_time ,
-    min_plan_time ,
-    max_plan_time, 
-    mean_plan_time ,
-    stddev_plan_time ,
 	calls , 
-	total_exec_time ,
-  	  min_exec_time  ,
-	  max_exec_time  ,
-	 mean_exec_time ,
-   stddev_exec_time  ,
+	total_time ,
+	min_time  ,
+	max_time  ,
+	mean_time ,
+	stddev_time  ,
 	"rows"  ,
 	shared_blks_hit  ,
 	shared_blks_read  ,
@@ -594,17 +540,6 @@ select
 	temp_blks_written ,
 	blk_read_time ,
 	blk_write_time ,
-    wal_records ,
-    wal_fpi ,
-    wal_bytes ,
-    jit_functions ,
-    jit_generation_time ,
-    jit_inlining_count ,
-    jit_inlining_time ,
-    jit_optimization_count ,
-    jit_optimization_time ,
-    jit_emission_count ,
-    jit_emission_time ,
 	yb_latency_histogram 
 from pg_stat_statements s
    , h h
@@ -630,7 +565,6 @@ insert into ybx_pgs_act (
   datid ,
   datname ,
   pid ,
-  leader_pid , 
   usesysid ,
   usename ,
   application_name ,
@@ -646,7 +580,6 @@ insert into ybx_pgs_act (
   state ,
   backend_xid ,
   backend_xmin ,
-  query_id ,
   query ,
   backend_type ,
   catalog_version ,
@@ -660,7 +593,6 @@ select
   datid ,
   datname ,
   pid ,
-  leader_pid , 
   usesysid ,
   usename ,
   application_name ,
@@ -676,7 +608,6 @@ select
   state ,
   backend_xid ,
   backend_xmin ,
-  query_id ,
   query ,
   backend_type ,
   catalog_version ,
@@ -990,47 +921,6 @@ select (select count (*) evlst from ybx_ash_evlst  ) evlst ;
 select ybx_get_evlst() ; 
 
 select (select count (*) evlst from ybx_ash_evlst  ) evlst ;
-
--- -- -- -- -- -- -- --
--- function to test cron, included here bcse cront would help collect ash
--- will sleep for x seconds, dflt 1
-
-CREATE OR REPLACE FUNCTION ybx_testcron( )
-  RETURNS bigint
-  LANGUAGE plpgsql
-AS $$
-DECLARE
-  start_dt      timestamp         := clock_timestamp(); 
-  end_dt        timestamp         := now() ;
-  hostnm        text              := ybx_get_host() ;
-  duration_ms   double precision  := 0.0 ;
-  nr_rec_processed bigint         := 0 ;
-  retval        bigint            := 0 ;
-  cmmnt_txt     text              := 'Event found ' ;
-BEGIN
-
-cmmnt_txt := 'testing cron on: ' || hostnm 
-                 || ', at: ' || start_dt::text ;
-
--- select pg_sleep ( 1 ) into retval ; 
-
-duration_ms := EXTRACT ( MILLISECONDS from ( clock_timestamp() - start_dt ) ) ;
-
-insert into ybx_log ( logged_dt, host,   component,      ela_ms,      info_txt )
-       select clock_timestamp(), hostnm, 'ybx_testcron', duration_ms, cmmnt_txt ;
-
--- end of fucntion..
-return retval ;
-
-END; -- ybx_testcron, to incrementally populate table
-$$
-; 
-
--- check 2 sec, find results in ybx_log
-select ybx_testcron ( ) as testcron ;
-
--- schedule a job..
-select cron.schedule ('* * * * *', $$ select ybx_testcron(); $$) ;
 
 -- call functions and compare counts to test
 

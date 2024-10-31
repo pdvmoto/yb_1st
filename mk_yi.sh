@@ -46,7 +46,8 @@
 # YB_IMAGE=yugabytedb/yugabyte:2.21.0.0-b545
 # YB_IMAGE=yugabytedb/yugabyte:2.21.1.0-b271
 # YB_IMAGE=yugabytedb/yugabyte:2024.1.1.0-b137
-YB_IMAGE=abhinabsaha/yugabytedb:latest_with_pid
+YB_IMAGE=pachot/yb-pg15:latest
+#YB_IMAGE=abhinabsaha/yugabytedb:latest_with_pid
 
 # 26 Aug, didnt have yb_ash view ?
 # YB_IMAGE=yugabytedb/yugabyte:2.20.6.0-b66
