@@ -18,8 +18,12 @@ usage:
 
 todo, high level.
  - for V15, re-check PKs, notably ysql_dbid ? check on insert-key?
+ - need datamodel: 
+    - store once: universe, cluster, node, master, tsever... 
+    - then add log-records per time or per snapshot? 
  - save table-sizes: pg_tables, oid, dt_found, size-mb, table_uuid [, num_tablets..]
-    but only save new records when data changes.. => ybx_tablogs is too slow.. reduce Freq..
+    but only save new records when data changes.. => ybx_get_tablogs is too slow.. reduce Freq..
+    better schedule via cron (now done!) bcse 1 node can do ybx_get_tablog
  - blog: save data in tables, then qry if needed.. only pick most recent data from mem.
    - add code + examples, notably interval
  - test with masters on separate nodes, see where activity goes.
@@ -39,6 +43,8 @@ todo, high level.
 todo:
  - some fuctions a bit slow, find out why.
  - isolate pg_cron items in separate file, in case not present
+ - blacklist works, but yb_local_tablets sometimes 0, sometimes not. thombstoned ?
+ - 
  - num tablets : select * from yb_table_properties(16642 ) is wrong.., 
     it relects nr tablest on startup of the tserver try this with auto-split, and see.
  - invalid byte sequence: some type conversion in get_ash ?
@@ -865,9 +871,9 @@ select
   and not exists 
       ( select 'x' from ybx_tablog l
         where 1=1
-          and t.oid =  l.rel_oid     -- assume oid is the identifying item
+          and t.oid                   =  l.rel_oid   -- assume oid is the identifying item
           and t.size_bytes            = l.size_bytes -- only if nothing changed
-          and t.num_tablets           =  l.num_tablets
+          and t.num_tablets           = l.num_tablets
           and t.num_hash_key_columns  = l.num_hash_key_columns
       ) ;
 
@@ -1029,8 +1035,11 @@ $$
 -- check 2 sec, find results in ybx_log
 select ybx_testcron ( ) as testcron ;
 
--- schedule a job..
+-- schedule a test job..
 select cron.schedule ('*/3 * * * *', $$ select ybx_testcron(); $$) ;
+
+-- schedule the logging of tab-sizes
+select cron.schedule ('*/4 * * * *', $$ select ybx_get_tablog(); $$) ;
 
 -- call functions and compare counts to test
 

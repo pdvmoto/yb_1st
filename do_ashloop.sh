@@ -36,7 +36,6 @@ do
       select ybx_get_ash () ;
       select ybx_get_tblts () ;
       select ybx_get_evlst() as added_events;
-      select ybx_get_tablog () ;
 
 EOF
 

@@ -9,3 +9,13 @@ generic todo list
 
 need a way to read key=values into table ybx_ingest: (id-seq, host, key, value )... all text..
 that way, reading from varz or just files is easier..
+
+to pick up OS data: unames.sh
+
+to pick up disk usage echo Disk_usage=`du -sm /root/var`
+
+to pick up memory: curl -s $HOSTNAME:7000/memz?raw
+to pick up memory: curl -s $HOSTNAME:9000/memz?raw
+
+some load-info from top: top -n1 | head -n4
+
