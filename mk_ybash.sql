@@ -898,8 +898,8 @@ RAISE NOTICE 'ybx_get_tablog() elapsed : % ms'     , duration_ms ;
 
 cmmnt_txt := 'created: ' || n_created || ', gone: ' || n_gone || '.' ;
 
-insert into ybx_log ( logged_dt, host,            component,        ela_ms,      info_txt )
-       select clock_timestamp(), ybx_get_host(), 'ybx_get_tablogs', duration_ms, cmmnt_txt ; 
+insert into ybx_log ( logged_dt, host,            component,       ela_ms,      info_txt )
+       select clock_timestamp(), ybx_get_host(), 'ybx_get_tablog', duration_ms, cmmnt_txt ; 
 
   -- end of fucntion..
   return retval ;
@@ -1030,7 +1030,7 @@ $$
 select ybx_testcron ( ) as testcron ;
 
 -- schedule a job..
-select cron.schedule ('* * * * *', $$ select ybx_testcron(); $$) ;
+select cron.schedule ('*/3 * * * *', $$ select ybx_testcron(); $$) ;
 
 -- call functions and compare counts to test
 

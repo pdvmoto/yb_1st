@@ -2,6 +2,10 @@
 generic todo list
 
  - remove nodes from cluster, tservers and masters
- - split ash-script into separate repostiories.
+ - split ash-script into separate repostiories on github
  - investigate multi-region and replication.
+ - log an aas; avg-act-ses, find baseload ? 
+ - log some server-data: memory
 
+need a way to read key=values into table ybx_ingest: (id-seq, host, key, value )... all text..
+that way, reading from varz or just files is easier..

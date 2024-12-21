@@ -46,8 +46,8 @@
 # YB_IMAGE=yugabytedb/yugabyte:2.21.0.0-b545
 # YB_IMAGE=yugabytedb/yugabyte:2.21.1.0-b271
 # YB_IMAGE=yugabytedb/yugabyte:2024.1.1.0-b137
-YB_IMAGE=pachot/yb-pg15:latest
-#YB_IMAGE=abhinabsaha/yugabytedb:latest_with_pid
+  YB_IMAGE=pachot/yb-pg15:latest
+# YB_IMAGE=abhinabsaha/yugabytedb:latest_with_pid
 
 # 26 Aug, didnt have yb_ash view ?
 # YB_IMAGE=yugabytedb/yugabyte:2.20.6.0-b66
@@ -75,7 +75,8 @@ sleep 2
 #  - how to get to K8s ??
 #
 
-  nodenrs="2 3 4 5"
+  nodenrs="2 3 4 5 6"
+# nodenrs="6 "
 # nodenrs="  "
 
 echo `date` $0 : ---- creating cluster for nodes : $nodenrs -------
@@ -205,10 +206,15 @@ echo .
 
 # docker exec node2 yugabyted start --advertise_address=node2 --background=true --ui=true
 
-  docker exec node2 yugabyted start \
+  startcmd=`echo docker exec node2 yugabyted start \
     --advertise_address=node2       \
     --tserver_flags=flagfile=/home/yugabyte/ybflags.conf \
-     --master_flags=flagfile=/home/yugabyte/ybflags.conf 
+     --master_flags=flagfile=/home/yugabyte/ybflags.conf `
+
+
+  echo $hname ... creating yugabyte instance:
+  echo $startcmd >> $LOGFILE
+  echo $startcmd
 
 echo .
 echo database created on node2: 3 sec to Cntr-C .. or .. loop Start over all nodes.
@@ -216,7 +222,15 @@ echo .
 echo note: we tolerate an error for node2 to allow uniform command for all nodes.
 echo .
 
-sleep 3
+sleep 6
+
+echo verify node2..
+docker exec node2 yugabyted status 
+echo .
+echo another 6 sec ...
+
+
+sleep 6
 
 for nodenr in $nodenrs
 do

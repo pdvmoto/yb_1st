@@ -964,7 +964,7 @@ $$
 select ybx_testcron ( ) as testcron ;
 
 -- schedule a job..
-select cron.schedule ('* * * * *', $$ select ybx_testcron(); $$) ;
+select cron.schedule ('*/3 * * * *', $$ select ybx_testcron(); $$) ;
 
 -- call functions and compare counts to test
 
