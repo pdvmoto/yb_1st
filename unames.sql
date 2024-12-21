@@ -1,8 +1,11 @@
 
 delete from ybx_kvlog where host = ybx_get_host () ; 
 
+-- need to go via file, bcse curl does not seem to work well if "from program"
+\! /tmp/unames.sh > /tmp/abc.out 
+
 COPY ybx_kvlog(key, value)
-FROM program '/tmp/unames.sh'
+FROM '/tmp/abc.out'
 WITH (FORMAT text, DELIMITER '=', HEADER false, NULL '');
 
 -- verify raw data
@@ -14,12 +17,19 @@ with
 , pr as ( select value from ybx_kvlog kv, gh where kv.host = gh.host and key = 'nr_processes' )
 , mm as ( select value from ybx_kvlog kv, gh where kv.host = gh.host and key = 'master_mem' )
 , tm as ( select value from ybx_kvlog kv, gh where kv.host = gh.host and key = 'tserver_mem' )
+, du as ( select value from ybx_kvlog kv, gh where kv.host = gh.host and key = 'disk_usage_mb' )
 , ti as ( select value from ybx_kvlog kv, gh where kv.host = gh.host and key = 'top_info' )
-select gh.host, pr.value::int nr_processes, mm.value::bigint master_mem, tm.value::bigint tserver_mem, ti.value top_info
+select gh.host
+, pr.value::int		nr_processes
+, mm.value::bigint 	master_mem
+, tm.value::bigint 	tserver_mem
+, du.value::bigint 	disk_usage_mb
+, ti.value 		top_info
 from gh gh
 , pr pr 
 , mm mm
 , tm tm
+, du du
 , ti ti
 ; 
 
@@ -30,16 +40,25 @@ with
 , pr as ( select value from ybx_kvlog kv, gh where kv.host = gh.host and key = 'nr_processes' )
 , mm as ( select value from ybx_kvlog kv, gh where kv.host = gh.host and key = 'master_mem' )
 , tm as ( select value from ybx_kvlog kv, gh where kv.host = gh.host and key = 'tserver_mem' )
+, du as ( select value from ybx_kvlog kv, gh where kv.host = gh.host and key = 'disk_usage_mb' )
 , ti as ( select value from ybx_kvlog kv, gh where kv.host = gh.host and key = 'top_info' )
-insert into ybx_host_log ( host, nr_processes, master_mem, tserver_mem, top_info )
-select gh.host, pr.value::int nr_processes, mm.value::bigint master_mem, tm.value::bigint tserver_mem, ti.value top_info
+insert into ybx_host_log ( host, nr_processes, master_mem, tserver_mem, disk_usage_mb, top_info )
+select gh.host
+, pr.value::int 	nr_processes
+, mm.value::bigint 	master_mem
+, tm.value::bigint 	tserver_mem
+, du.value::bigint 	disk_usage_mb
+, ti.value 		top_info
 from gh gh
 , pr pr 
 , mm mm
 , tm tm
+, du du
 , ti ti
 ; 
 
+select * from ybx_host_log ; 
+
 -- cleanup, it is temporary data after all
-delete from ybx_kvlog where host = ybx_get_host() ; 
+-- delete from ybx_kvlog where host = ybx_get_host() ; 
 

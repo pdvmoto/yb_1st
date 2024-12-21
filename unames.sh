@@ -11,6 +11,8 @@ echo "machine_platform=" `uname -i`
 echo "operating-system=" `uname -o`
 echo "processor=" `uname -p`
 
+echo "disk_usage_mb=" `du -sm /root/var/ | cut -f1 `
+
 echo "master_mem="  `curl -s $HOSTNAME:7000/memz?raw | grep Virtual | cut -c10-23`
 echo "tserver_mem=" `curl -s $HOSTNAME:9000/memz?raw | grep Virtual | cut -c10-23`
 
