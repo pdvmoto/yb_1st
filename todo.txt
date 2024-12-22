@@ -5,17 +5,27 @@ generic todo list
  - split ash-script into separate repostiories on github
  - investigate multi-region and replication.
  - log an aas; avg-act-ses, find baseload ? 
- - log some server-data: memory
+ - create subdir with sh-scripts to run evey N seconds: ashloop, unames, master-log, tserver-log...
+
+next
+ - log some server-data: use script, function.. use unames + yb_func().. just log /180sec
+ - set grafana open
+ - run some load..
 
 need a way to read key=values into table ybx_ingest: (id-seq, host, key, value )... all text..
 that way, reading from varz or just files is easier..
+=> done in unames.sql
 
 to pick up OS data: unames.sh
-
 to pick up disk usage echo Disk_usage=`du -sm /root/var`
-
 to pick up memory: curl -s $HOSTNAME:7000/memz?raw
 to pick up memory: curl -s $HOSTNAME:9000/memz?raw
-
 some load-info from top: top -n1 | head -n4
+
+get master info: 
+ybmast | expand | tail -n3 | sed 's/ \+/\|/g' 
+
+other sources of data: for tserver
+select * from yb_heap_stats();  
+select * from yb_servers_metrics () ;
 
