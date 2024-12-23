@@ -41,6 +41,7 @@ todo, high level.
  - detect tablets on non-existing nodes.. close them..  (gone_time, closed by self or other...)? 
 
 todo:
+ - find uuid of local tserver. similr to ybx_get_host(). Find "where we are"
  - some fuctions a bit slow, find out why.
  - isolate pg_cron items in separate file, in case not present
  - blacklist works, but yb_local_tablets sometimes 0, sometimes not. thombstoned ?

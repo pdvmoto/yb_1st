@@ -45,6 +45,7 @@ EOF
 
   # docker exec -it $node startsadc.sh  
   # docker exec -it $node st_ashloop.sh 
+  docker exec -it $node do_stuff.sh
 
 done
 

@@ -25,7 +25,25 @@ some load-info from top: top -n1 | head -n4
 get master info: 
 ybmast | expand | tail -n3 | sed 's/ \+/\|/g' 
 
+
+To log master-server config, have 1 node collect:: 
+1. determine snap_id + log_dt
+2. scrape master-info:  uuid + node + port + STATUS + leader/follower
+3. scrape tserver-info:  uuid + node + port + heartbeat + STATUS + leader/follower
+4. log tserver_metrics for all nodes yb_server_metrics()
+
+on each node: collect t-server-info
+4. add to uname or ashloop: use last snapshot to find uuid for node, use uuid to select from yb_heap_stats()
+
+echo "local_tserver=" `ybmast | grep $HOSTNAME | cut -c1-33`
+
+
+-- work on here.. ybx_tsrv_log (how to find uuid?)
 other sources of data: for tserver
 select * from yb_heap_stats();  
 select * from yb_servers_metrics () ;
 
+select * from pg_catalog.yb_mem_usage_sql() ;
+
+next; log data and display in graphana.
+:
