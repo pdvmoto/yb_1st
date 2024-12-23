@@ -40,8 +40,28 @@ echo "local_tserver=" `ybmast | grep $HOSTNAME | cut -c1-33`
 
 -- work on here.. ybx_tsrv_log (how to find uuid?)
 other sources of data: for tserver
+
+-- heap is local to server, must be in host_log, via unames.sql
 select * from yb_heap_stats();  
+
+-- metrics can be part of snapshot.. 
 select * from yb_servers_metrics () ;
+
+select tl.host, tm.status, tm.error
+, (tm.metrics::json->>'memory_free')::bigint/1024/1024  as memory_free 
+, (tm.metrics::json->>'memory_total')::bigint/1024/1024 as memory_total
+, (tm.metrics::json->>'memory_available')::bigint/1024/1024 as memory_available
+, (tm.metrics::json->>'tserver_root_memory_soft_limit')::bigint/1024/1024 as tserver_root_memory_soft_limit
+, (tm.metrics::json->>'tserver_root_memory_consumption')::bigint/1024/1024 as tserver_root_memory_consumption
+, (tm.metrics::json->>'cpu_usage_user')::real  as cpu_usage_user 
+, (tm.metrics::json->>'cpu_usage_system')::real  as cpu_usage_system 
+, tm.uuid
+from ybx_tsrv_log tl,  yb_servers_metrics () tm
+where 1=1 
+and tl.snap_id = 4801
+and tl.tsrv_uuid = tm.uuid
+order by tl.host, tl.snap_id desc ; 
+
 
 select * from pg_catalog.yb_mem_usage_sql() ;
 
