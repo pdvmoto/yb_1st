@@ -7,10 +7,25 @@ generic todo list
  - log an aas; avg-act-ses, find baseload ? 
  - create subdir with sh-scripts to run evey N seconds: ashloop, unames, master-log, tserver-log...
 
+todo:
+ - detect new combinations for ybx_mast_mst and ybx_tsrv_mst : 
+ - has to act as decoding between uuid and host.
+    - snap_id ( = also found_dt )
+    - host (where it runs, not where it is found!)
+    - tsrv_uuid.
+    - pk: host + tsrv , the snap_id is  just a time-indicator.
+
 next
  - log some server-data: use script, function.. use unames + yb_func().. just log /180sec
  - set grafana open
  - run some load..
+ - edit scripts + instructions to deploy:
+    - yb_init.sql
+    - mk_ybash.sql
+      - do_stuff.sh, do_ashloop.sh, do_sadc.sh
+    - yb_osmetrics.sql
+    - unames.sql + sh (all nodes)
+    - do_snap.sh (only 1 node, needs separate loop-script.) 
 
 need a way to read key=values into table ybx_ingest: (id-seq, host, key, value )... all text..
 that way, reading from varz or just files is easier..
@@ -67,3 +82,11 @@ select * from pg_catalog.yb_mem_usage_sql() ;
 
 next; log data and display in graphana.
 :
+
+
+todo - searching for SQL.
+ - top-SQL with count-events.., count per SQL or TSrv
+ - top SQL per node (with count-events)
+ - top SQL, with most top-PIDs : many small ones
+ - top SQL, with Least PIDs: repeated SQL, or long running SQL
+

@@ -171,6 +171,12 @@ select  date_trunc( 'seconds' , sample_time) as dt
 , sum ( case a.wait_event_type when 'Network' then 1 else 0 end ) as Network
 from ybx_ash a
 
+for storge, try..
+select date_trunc( 'seconds' , log_dt) as dt 
+, yhl.disk_usage_mb as mb 
+from ybx_host_log yhl 
+where host = 'node2' order by 1 ;
+
 -- -- -- 
 blog 2
 

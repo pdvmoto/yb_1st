@@ -82,6 +82,13 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   from ybx_intf order by id 
   returning * ;
 
+  -- update mst if new one found
+  insert into ybx_mast_mst ( mast_uuid, host, snap_id)
+  select  mast_uuid, host , min ( snap_id ) snap_id 
+  from ybx_mast_log  m
+  where not exists  ( select 'x' from ybx_mast_mst m2 where m2.host = m.host and m2.mast_uuid = m.mast_uuid )
+  group by 1, 2; 
+
   select '-- $0 -- mast_log created -- ' ;
 
   -- clean out
@@ -105,8 +112,30 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   from ybx_intf order by id 
   returning * ;
 
+  -- update mst if new one found
+  insert into ybx_tsrv_mst ( tsrv_uuid, host, snap_id)
+  select  tsrv_uuid, host , min ( snap_id ) snap_id 
+  from ybx_tsrv_log  s
+  where not exists  ( select 'x' from ybx_tsrv_mst t2 where t2.host = s.host and t2.tsrv_uuid = s.tsrv_uuid )
+  group by 1, 2; 
   select '-- $0 -- tsrv_log created -- ' ;
 
+  -- here: add data from yb_mem_usage, it covers all servers..
+  /* use stmnt below to update yb_tsrv_log fields, needs editing! 
+select uuid
+, status
+, error
+, metrics::json->>'cpu_usage_system'  cpu_usage_system
+, metrics::json->>'cpu_usage_system'  cpu_usage_user
+, metrics::json->>'cpu_usage_system'  memory_total
+, metrics::json->>'cpu_usage_system'  memory_free
+, metrics::json->>'cpu_usage_system'  memory_available
+, metrics::json->>'cpu_usage_system'  tserver_root_memory_limit
+, metrics::json->>'cpu_usage_system'  tserver_root_memory_soft_limit
+, metrics::json->>'cpu_usage_system'  tserver_root_memory_consumption
+, pg_catalog.yb_mem_usage ()
+from yb_servers_metrics () ;
+*/
   -- final clean out
   delete from ybx_intf where host = ybx_get_host() ;  
 
