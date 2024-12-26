@@ -15,6 +15,7 @@ COPY ybx_kvlog(key, value)
 FROM '/tmp/abc.out'
 WITH (FORMAT text, DELIMITER '=', HEADER false, NULL '');
 
+/*** 
 -- verify raw data
 select * from ybx_kvlog where host = ybx_get_host();
 
@@ -43,6 +44,8 @@ from gh gh
 , ti ti
 ; 
 
+***/
+
 -- do transfer to log-table 
 -- note the intrinsic convesion to some numbers...
 with 
@@ -70,8 +73,10 @@ from gh gh
 , ti ti
 ; 
 
-select * from ybx_host_log ; 
+-- select * from ybx_host_log ; 
 
 -- cleanup, it is temporary data after all
 delete from ybx_kvlog where host = ybx_get_host() ; 
+
+-- measure time if poss..
 

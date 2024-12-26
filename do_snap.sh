@@ -3,20 +3,19 @@
 #
 # do_snap.sh: run a snapshot to catch universe, masters, tserv
 #
-
-# generate the data to files, to pick up:
+# generate the data to files, to pick up with COPY-from :
 # uuniverse comes as json, others as ascii, so add separators
 
-yb-admin -master_addresses $MASTERS get_universe_config \
-> /tmp/ybuniv.json
+# yb-admin -master_addresses $MASTERS get_universe_config     \
+# > /tmp/ybuniv.json
 
-yb-admin -master_addresses $MASTERS list_all_masters \
-| expand | tail -n +2 | sed 's/ \+/\|/g' | sed 's/\:/\|/g' \
-> /tmp/ybmast.out
+# yb-admin -master_addresses $MASTERS list_all_masters        \
+# | expand | tail -n +2 | sed 's/ \+/\|/g' | sed 's/\:/\|/g'  \
+# > /tmp/ybmast.out
 
-yb-admin -master_addresses $MASTERS list_all_tablet_servers   \
-| expand | tail -n +2 | sed 's/ \+/\|/g' | sed 's/\:/\|/g' \
-> /tmp/ybtsrv.out
+# yb-admin -master_addresses $MASTERS list_all_tablet_servers \
+# | expand | tail -n +2 | sed 's/ \+/\|/g' | sed 's/\:/\|/g'  \
+# > /tmp/ybtsrv.out
 
 # now use the files to generate a snapshot with data, 
 
@@ -30,10 +29,14 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   -- verify
   select 'generated snap_id : ' as titl, :snap_id as snap_id, :hostnm as hostnm;
  
-  select '-- $0 : snap created -- ' ;
+  select '-- $0 : snap created -- ' as msg ;
 
-  -- clean out infc
+
+  -- Universe: clean out infc, slurp the data, and insert
   delete from ybx_intf where host = ybx_get_host();
+
+  \! yb-admin -master_addresses $MASTERS get_universe_config     \
+    > /tmp/ybuniv.json
 
   COPY ybx_intf ( slurp )
   from '/tmp/ybuniv.json'
@@ -61,10 +64,14 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   from ybx_intf if
   returning * ; 
 
-  select '-- $0 -- univ_log created -- ' ;
+  select '-- $0 -- univ_log created -- ' as msg ;
 
   -- clean out
   delete from ybx_intf where host = ybx_get_host() ;  
+
+  \! yb-admin -master_addresses $MASTERS list_all_masters         \
+    | expand | tail -n +2 | sed 's/ \+/\|/g' | sed 's/\:/\|/g'    \
+    > /tmp/ybmast.out
 
   -- read masters
   COPY ybx_intf ( slurp )
@@ -82,17 +89,14 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   from ybx_intf order by id 
   returning * ;
 
-  -- update mst if new one found
-  insert into ybx_mast_mst ( mast_uuid, host, snap_id)
-  select  mast_uuid, host , min ( snap_id ) snap_id 
-  from ybx_mast_log  m
-  where not exists  ( select 'x' from ybx_mast_mst m2 where m2.host = m.host and m2.mast_uuid = m.mast_uuid )
-  group by 1, 2; 
-
-  select '-- $0 -- mast_log created -- ' ;
+  select '-- $0 -- mast_log created -- ' as msg ;
 
   -- clean out
   delete from ybx_intf where host = ybx_get_host() ;  
+
+  \! yb-admin -master_addresses $MASTERS list_all_tablet_servers \
+    | expand | tail -n +2 | sed 's/ \+/\|/g' | sed 's/\:/\|/g'  \
+    > /tmp/ybtsrv.out
 
   -- read tservers
   COPY ybx_intf ( slurp )
@@ -112,36 +116,24 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   from ybx_intf order by id 
   returning * ;
 
-  -- update mst if new one found
-  insert into ybx_tsrv_mst ( tsrv_uuid, host, snap_id)
-  select  tsrv_uuid, host , min ( snap_id ) snap_id 
-  from ybx_tsrv_log  s
-  where not exists  ( select 'x' from ybx_tsrv_mst t2 where t2.host = s.host and t2.tsrv_uuid = s.tsrv_uuid )
-  group by 1, 2; 
-  select '-- $0 -- tsrv_log created -- ' ;
+  select '-- $0 -- tsrv_log created -- ' as msg ;
 
-  -- here: add data from yb_mem_usage, it covers all servers..
-  /* use stmnt below to update yb_tsrv_log fields, needs editing! 
-select uuid
-, status
-, error
-, metrics::json->>'cpu_usage_system'  cpu_usage_system
-, metrics::json->>'cpu_usage_system'  cpu_usage_user
-, metrics::json->>'cpu_usage_system'  memory_total
-, metrics::json->>'cpu_usage_system'  memory_free
-, metrics::json->>'cpu_usage_system'  memory_available
-, metrics::json->>'cpu_usage_system'  tserver_root_memory_limit
-, metrics::json->>'cpu_usage_system'  tserver_root_memory_soft_limit
-, metrics::json->>'cpu_usage_system'  tserver_root_memory_consumption
-, pg_catalog.yb_mem_usage ()
-from yb_servers_metrics () ;
-*/
   -- final clean out
   delete from ybx_intf where host = ybx_get_host() ;  
 
-  -- maybe measure elapsed ? 
+  -- maybe measure elapsed ?
+  with log as (  
+    select  clock_timestamp() as logged_dt
+          , ybx_get_host()    as host
+          , 'do_snapshot'     as component
+          , EXTRACT (EPOCH FROM now () - s.log_dt ) * 1000 as ela_ms
+          , 'snap_id = ' || :snap_id::text || '.' as info_txt
+    from ybx_snap_log s where s.id = :snap_id
+    ) 
+  insert into ybx_log ( logged_dt, host, component, ela_ms, info_txt )
+                 select logged_dt, host, component, ela_ms, info_txt 
+                   from log ; 
 
 EOF
-
 
 echo snap generated 

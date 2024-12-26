@@ -13,22 +13,42 @@ usage:
  - run script \i mk_ybash.sql: to create functions + tables, 
    check for erros in case DDL changes
  - schedule for regular collection, e.g. 1min, 10min.: do_ashloop.sh
+ - include unames.sh and unames.sql
+ - include do_snap.sh on ONE node.
+ - verify cronjob for ybx_get_tablog(), (consider moving to do_snap.sh)
  - optional: check to have yb_init.sql done, create helper-functions (cnt)
  - optional: add \i mk_ashvws.sql for the gv views from Frankc.
+ - 
 
 todo, high level.
  - for V15, re-check PKs, notably ysql_dbid ? check on insert-key?
+ - consider separate database for deployment
  - need datamodel: 
     - store once: universe, cluster, node, master, tsever... 
     - then add log-records per time or per snapshot? 
+    - add FKs to/from tables - tablets - host
+    - found_dt, log_dt, gone_dt : consistent names
+    - uuid or text ??? 
+    - consider abstracting sessions (+log), root_events (+log), queries (+log)
+ - queries: 1 query_id, can have many root_requests From diff tsever, 
+    - quer_mst + quer_log (with fk to sess_mst) needed, qry-stats should be logged until... 
+    - check: does a root_req only have one query_id ? (pg_stmnt_log = top?)
+ - root_req: can generate an ash_events on several nodes.
+    - duration of root_req can be measured on originating node. (top_server_uuid)
+    - how to know if a root_req is finished ? (not exist )
+ - session: sess_mst = pid + node + backend_start_dt, 
+    - then generates sess_log records from pg_stats_activity for as long as it lives
  - save table-sizes: pg_tables, oid, dt_found, size-mb, table_uuid [, num_tablets..]
     but only save new records when data changes.. => ybx_get_tablogs is too slow.. reduce Freq..
     better schedule via cron (now done!) bcse 1 node can do ybx_get_tablog
  - blog: save data in tables, then qry if needed.. only pick most recent data from mem.
    - add code + examples, notably interval
+ - simplify deployment, merge mk_osdata + collect scripts.
+    - consider separate db: sysaux , owner ybash..? 
  - test with masters on separate nodes, see where activity goes.
     sar shows equal activity, but top shows activ only on nodes with tablets..
  - grafana: use qries with time (minute) and metrics.. 
+    - save SQL for graphana dashboards
  - grafana: use qries with count per stmnt (over last x min), and display top stmnt.
  - reports: find top-consumers
  - reports: zoom in, tree, or hierarchy.. despite yb-claim..
@@ -97,6 +117,17 @@ more todo
  - test with 1 or more nodes down + up. watch redistribution ?
  - Idle, ClientRead etc: make a list of Idle events
  - log yb-admin masters and tservers
+
+todo on rewrite:
+ - all logging tables created in 1 script (add mk_osdata.sql ) 
+ - collect-scripts: 
+    1- ashloop, call fuctions, per server. 
+    2- unames.sh/sql per server, need shell
+    2- tablog: via cron ? later add to do_snap.sh, need only 1 per cluster
+    3- do_snap: 1-per-cluseter not via crontab, bcse shell needed
+ - use uuid or text, but only 1 type.. (prfer uuid, more efficient ? )
+ 
+ 
 
 todo logging
  - is tx-asc a good pk ?
@@ -477,7 +508,7 @@ DECLARE
 BEGIN
 
 -- ash-records, much faster using with clause ?
-with h as ( select ybx_get_host () as host ) 
+with /* get_ash_1 */ h as ( select ybx_get_host () as host ) 
 insert into ybx_ash  (
   host 
 , sample_time 
@@ -520,7 +551,7 @@ where not exists ( select 'x' from ybx_ash b
                    and   b.root_request_id = a.root_request_id
                    and   b.rpc_request_id  = coalesce ( a.rpc_request_id, 0 )
                    and   b.wait_event      = a.wait_event
-                   -- and   b.sample_time > ( start_dt - make_interval ( secs=>900 ) )
+                   and   b.sample_time > ( start_dt - make_interval ( secs=>900 ) )
                  );
 
 GET DIAGNOSTICS n_ashrecs := ROW_COUNT;
@@ -529,7 +560,7 @@ retval := retval + n_ashrecs ;
 RAISE NOTICE 'ybx_get_ash() yb_act_sess_hist : % ' , n_ashrecs ; 
 
 -- now collect pg_stat_stmnts (and activity )
-with h as ( select ybx_get_host () as host )
+with /* get_ash_2 */ h as ( select ybx_get_host () as host )
 insert into ybx_pgs_stmt ( 
   host ,   -- check if qryid is same on host
 	userid , 
@@ -636,7 +667,7 @@ RAISE NOTICE 'ybx_get_ash() pg_stat_stmnts   : % ' , n_stmnts ;
 
 -- collect acitivity..
 
-with h as ( select ybx_get_host () as host, now() as smpltm )
+with /* get_ash_3 */ h as ( select ybx_get_host () as host, now() as smpltm )
 insert into ybx_pgs_act (
   host ,
   sample_time ,
@@ -845,7 +876,9 @@ DECLARE
   cmmnt_txt     text              := ' ' ;
 BEGIN
 
--- insert any new-found tablets on this node...
+-- insert any new-found tables on this node...
+-- also: insert new record if properties have changed..
+-- better: use tabl_mst + tabl_log ... later
 with h as ( select ybx_get_host () as host )
 insert into ybx_tablog (
   logged_host ,
@@ -1043,10 +1076,12 @@ $$
 select ybx_testcron ( ) as testcron ;
 
 -- schedule a test job..
-select cron.schedule ('*/3 * * * *', $$ select ybx_testcron(); $$) ;
+select cron.schedule ('*/3 * * * *', $$ select ybx_testcron(); $$) 
+where not exists ( select 'x' from cron.job j where j.command like '%ybx_testcron%' );
 
 -- schedule the logging of tab-sizes
-select cron.schedule ('*/4 * * * *', $$ select ybx_get_tablog(); $$) ;
+select cron.schedule ('*/4 * * * *', $$ select ybx_get_tablog(); $$) 
+where not exists ( select 'x' from cron.job j where j.command like '%ybx_get_tablog%' );
 
 -- call functions and compare counts to test
 
