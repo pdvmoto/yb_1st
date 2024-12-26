@@ -21,6 +21,9 @@
 
 time ysqlsh -h $HOSTNAME -X <<EOF
 
+  \timing
+  \echo on
+
   -- generate snapshot
   insert into ybx_snap_log ( host ) values ( ybx_get_host() )
   returning id as snap_id , ''''||host||'''' as hostnm
