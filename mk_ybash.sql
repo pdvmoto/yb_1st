@@ -12,16 +12,18 @@ usage:
  - verify the view yb_active_session_history is present
  - run script \i mk_ybash.sql: to create functions + tables, 
    check for erros in case DDL changes
+ - verify cronjob for ybx_get_tablog(), (consider moving to do_snap.sh)
  - schedule for regular collection, e.g. 1min, 10min.: do_ashloop.sh
  - run mk_osdata.sql to create more tables, host, mast, tsrv, univ
  - include unames.sh and unames.sql
  - include do_snap.sh on ONE node.
- - verify cronjob for ybx_get_tablog(), (consider moving to do_snap.sh)
- - optional: check to have yb_init.sql done, create helper-functions (cnt)
+ - optional: check to have yb_init.sql done on other dbids, create helper-functions (cnt)
  - optional: add \i mk_ashvws.sql for the gv views from Frankc.
  - 
 
 todo, high level.
+ - to connect ash to sessions: store client_addr and client_port: split_part..
+ - log database stats.. datb_mst and datb_log
  - for V15, re-check PKs, notably ysql_dbid ? check on insert-key?
  - consider separate database for deployment, db_util ? 
  - need datamodel: 
@@ -29,7 +31,8 @@ todo, high level.
     - then add log-records per time or per snapshot?          ybx_abcd_log
     - add FKs to/from tables - tablets - host
     - found_dt, log_dt, gone_dt : consistent names            sample_dt or log_dt
-    - uuid or text ??? 
+    - uuid or text ??? yb_servers.uuid : text.. but ash.top_level_node_id and yb-admin: text.
+    
     - consider abstracting sessions (+log), root_events (+log), queries (+log)
  - queries: 1 query_id, can have many root_requests From diff tsever, 
     - quer_mst + quer_log (with fk to sess_mst) needed, qry-stats should be logged until... 
@@ -55,6 +58,7 @@ todo, high level.
  - reports: zoom in, tree, or hierarchy.. despite yb-claim..
  - report + data: why sometimes 25K reords per minute?? what kind of events?
  - try logging "sessions" from client_node_ip: create_dt and gone_dt, or sess_id
+ - to connect to sessions: store client_addr and client_port: split_part..
  - link ahs to activity, qry-text not the same, with/out $n substitutes
  - link ash to pg_stat_statements with query_id
  - save pg_stat_stmt + metrics (2 tables: stmnt_id, and id+metrics_in_interval)
