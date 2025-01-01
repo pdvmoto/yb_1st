@@ -75,7 +75,7 @@ sleep 2
 #  - how to get to K8s ??
 #
 
-  nodenrs="2 3 4 5 6"
+  nodenrs="2 3 4 5"
 # nodenrs="6 "
 # nodenrs="  "
 
@@ -149,6 +149,14 @@ do
   docker exec -it $hname   chmod 755         /usr/local/bin/do_ashloop.sh
   docker cp st_ashloop.sh             $hname:/usr/local/bin/st_ashloop.sh
   docker exec -it $hname   chmod 755         /usr/local/bin/st_ashloop.sh
+
+  echo $hname : add unames.sql, -.sh, do_snap.sh
+  docker cp unames.sh                 $hname:/usr/local/bin/unames.sh
+  docker exec -it $hname   chmod 755         /usr/local/bin/unames.sh
+  docker cp unames.sql                $hname:/usr/local/bin/unames.sql
+  docker exec -it $hname   chmod 755         /usr/local/bin/unames.sql
+  docker cp do_snap.sh                $hname:/usr/local/bin/do_snap.sh
+  docker exec -it $hname   chmod 755         /usr/local/bin/do_snap.sh
 
   echo $hname : add startsadc.sh or similar to help collect sar
   docker cp startsadc.sh    $hname:/usr/local/bin/startsadc.sh

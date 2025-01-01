@@ -13,6 +13,7 @@ usage:
  - run script \i mk_ybash.sql: to create functions + tables, 
    check for erros in case DDL changes
  - schedule for regular collection, e.g. 1min, 10min.: do_ashloop.sh
+ - run mk_osdata.sql to create more tables, host, mast, tsrv, univ
  - include unames.sh and unames.sql
  - include do_snap.sh on ONE node.
  - verify cronjob for ybx_get_tablog(), (consider moving to do_snap.sh)
@@ -22,12 +23,12 @@ usage:
 
 todo, high level.
  - for V15, re-check PKs, notably ysql_dbid ? check on insert-key?
- - consider separate database for deployment
+ - consider separate database for deployment, db_util ? 
  - need datamodel: 
-    - store once: universe, cluster, node, master, tsever... 
-    - then add log-records per time or per snapshot? 
+    - store once: universe, cluster, node, master, tsever...  ybx_abcd_mst
+    - then add log-records per time or per snapshot?          ybx_abcd_log
     - add FKs to/from tables - tablets - host
-    - found_dt, log_dt, gone_dt : consistent names
+    - found_dt, log_dt, gone_dt : consistent names            sample_dt or log_dt
     - uuid or text ??? 
     - consider abstracting sessions (+log), root_events (+log), queries (+log)
  - queries: 1 query_id, can have many root_requests From diff tsever, 
@@ -60,12 +61,19 @@ todo, high level.
  - detect tablets that have moved, try finding "where to" or "where from"
  - detect tablets on non-existing nodes.. close them..  (gone_time, closed by self or other...)? 
 
+ - log AAS per database, quick win:
+    select d.datname 
+    , d.session_time, d.active_time -- use Delta once logging is on possible
+    ,   round (d.active_time::numeric / (d.session_time+0.1)::numeric, 3) aas
+    , d.* 
+    from pg_catalog.pg_stat_database d; 
+
 todo:
  - find uuid of local tserver. similr to ybx_get_host(). Find "where we are"
  - some fuctions a bit slow, find out why.
  - isolate pg_cron items in separate file, in case not present
  - blacklist works, but yb_local_tablets sometimes 0, sometimes not. thombstoned ?
- - 
+ - speed up insert query get_ash_1, limit to check only last 900 sec, but seems to fail
  - num tablets : select * from yb_table_properties(16642 ) is wrong.., 
     it relects nr tablest on startup of the tserver try this with auto-split, and see.
  - invalid byte sequence: some type conversion in get_ash ?
@@ -290,9 +298,7 @@ CREATE TABLE ybx_ash (
     ysql_dbid              oid NULL
   --, constraint ybx_ash_pk primary key ( id ) 
   --, constraint ybx_ash_pk primary key ( host HASH, sample_time ASC, root_request_id ASC, rpc_request_id ASC, wait_event asc) 
-) 
-split into 1 tablets
-;
+) ;
 
 create index ybx_ash_key on ybx_ash 
   ( sample_time asc, host, root_request_id, rpc_request_id, wait_event ) ; 
@@ -508,7 +514,11 @@ DECLARE
 BEGIN
 
 -- ash-records, much faster using with clause ?
-with /* get_ash_1 */ h as ( select ybx_get_host () as host ) 
+with /* get_ash_1 */ 
+  h as ( select ybx_get_host () as host )
+-- , l as ( select al.* from ybx_ash al 
+--              where al.host = ybx_get_host()
+--                and al.sample_time > (now() - interval '900 sec' ) )
 insert into ybx_ash  (
   host 
 , sample_time 
@@ -551,7 +561,7 @@ where not exists ( select 'x' from ybx_ash b
                    and   b.root_request_id = a.root_request_id
                    and   b.rpc_request_id  = coalesce ( a.rpc_request_id, 0 )
                    and   b.wait_event      = a.wait_event
-                   and   b.sample_time > ( start_dt - make_interval ( secs=>900 ) )
+                   -- and   b.sample_time > ( start_dt - make_interval ( secs=>900 ) )
                  );
 
 GET DIAGNOSTICS n_ashrecs := ROW_COUNT;
@@ -560,7 +570,8 @@ retval := retval + n_ashrecs ;
 RAISE NOTICE 'ybx_get_ash() yb_act_sess_hist : % ' , n_ashrecs ; 
 
 -- now collect pg_stat_stmnts (and activity )
-with /* get_ash_2 */ h as ( select ybx_get_host () as host )
+-- note: explain causes duplicte queryids... 
+with /* get_ash_2_stmt */ h as ( select ybx_get_host () as host )
 insert into ybx_pgs_stmt ( 
   host ,   -- check if qryid is same on host
 	userid , 
@@ -659,6 +670,7 @@ and not exists ( select 'x' from ybx_pgs_stmt y
                  and   y.userid = s.userid
                  and   y.queryid = s.queryid
 ) 
+and lower ( substring ( s.query from 1 for 8 )) != 'explain ' 
 ;
 
 GET DIAGNOSTICS n_stmnts := ROW_COUNT;
@@ -667,7 +679,7 @@ RAISE NOTICE 'ybx_get_ash() pg_stat_stmnts   : % ' , n_stmnts ;
 
 -- collect acitivity..
 
-with /* get_ash_3 */ h as ( select ybx_get_host () as host, now() as smpltm )
+with /* get_ash_3_act */ h as ( select ybx_get_host () as host, now() as smpltm )
 insert into ybx_pgs_act (
   host ,
   sample_time ,
@@ -778,7 +790,8 @@ DECLARE
 BEGIN
 
 -- insert any new-found tablets on this node...
-with h as ( select ybx_get_host () as host )
+with /* get_tblts_1 */ 
+  h as ( select ybx_get_host () as host )
 insert into ybx_tblt (
   host ,
   sample_time ,
@@ -818,7 +831,8 @@ RAISE NOTICE 'ybx_get_tblts() created : % tblts' , n_created ;
 
 -- update the gone_date if tablet no longer present..
 -- signal gone_date if ... gone
-with h as ( select ybx_get_host () as host )
+with /* get_tblts_2 */ 
+  h as ( select ybx_get_host () as host )
 update ybx_tblt t set gone_time = start_dt 
 where 1=1 
 and   t.gone_time  is null                   -- no end time yet
@@ -879,7 +893,7 @@ BEGIN
 -- insert any new-found tables on this node...
 -- also: insert new record if properties have changed..
 -- better: use tabl_mst + tabl_log ... later
-with h as ( select ybx_get_host () as host )
+with /* tablog_1 */ h as ( select ybx_get_host () as host )
 insert into ybx_tablog (
   logged_host ,
   rel_oid , 
@@ -924,7 +938,7 @@ RAISE NOTICE 'ybx_get_tablog() created : % tablogs' , n_created ;
 -- update the gone_date if tablet no longer present..
 
 -- signal gone_date if ... gone
-with h as ( select ybx_get_host () as host )
+with /* tablog_2 */ h as ( select ybx_get_host () as host )
 update ybx_tablog t set gone_dt = start_dt 
 where 1=1 
 and t.gone_dt  is null                   -- no end time yet

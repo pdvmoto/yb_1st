@@ -32,10 +32,17 @@ do
     date "+%Y-%m-%dT%H:%M:%S do_ashloop.sh on ${HOSTNAME} : running ..."
   
     ysqlsh -h $HOSTNAME -X <<EOF
+
       \timing
+
       select ybx_get_ash () ;
       select ybx_get_tblts () ;
       select ybx_get_evlst() as added_events;
+
+      select ybx_get_qury () ;  
+      select ybx_get_sess () ;
+
+      \i /usr/local/bin/unames.sql
 
 EOF
 

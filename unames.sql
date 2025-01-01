@@ -9,7 +9,7 @@
 delete from ybx_kvlog where host = ybx_get_host () ; 
 
 -- need to go via file, bcse curl does not seem to work well if "from program"
-\! /tmp/unames.sh > /tmp/abc.out 
+\! /usr/local/bin/unames.sh > /tmp/abc.out 
 
 COPY ybx_kvlog(key, value)
 FROM '/tmp/abc.out'
