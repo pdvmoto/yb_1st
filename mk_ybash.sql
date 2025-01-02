@@ -296,6 +296,8 @@ CREATE TABLE ybx_ash (
 	ysql_session_id       int8 NULL, -- no longer needed ? 
 	pid                   int8 NULL,
 	client_node_ip        text NULL,
+  client_addr           inet 
+  client_port           integer 
 	wait_event_aux        text NULL,
 	sample_weight         real NULL,
 	wait_event_type       text NULL,
@@ -310,6 +312,9 @@ create index ybx_ash_key on ybx_ash
 create index ybx_ash_host on ybx_ash 
   ( host, sample_time asc ) ; 
 
+alter table ybx_ash add constraint 
+  ybx_ash_fk_sess foreign key ( client_addr, client_port) 
+      references ybx_sess_mst ( client_addr, client_port); 
 
 \echo ybx_pgs_stmt, for pg_stat_statements. needs updates...
 

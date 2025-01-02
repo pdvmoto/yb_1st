@@ -31,6 +31,10 @@ do
 
     date "+%Y-%m-%dT%H:%M:%S do_ashloop.sh on ${HOSTNAME} : running ..."
   
+    # snapshot should preceed ash, to catch new tsevers
+    # but is only needed on 1 node
+    # /usr/local/bin/do_snap.sh
+
     ysqlsh -h $HOSTNAME -X <<EOF
 
       \timing
@@ -42,6 +46,7 @@ do
       select ybx_get_qury () ;  
       select ybx_get_sess () ;
 
+      -- use this sql to include host-data for host_mst
       \i /usr/local/bin/unames.sql
 
 EOF
