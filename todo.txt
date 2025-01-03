@@ -90,3 +90,23 @@ todo - searching for SQL.
  - top SQL, with most top-PIDs : many small ones
  - top SQL, with Least PIDs: repeated SQL, or long running SQL
 
+-- metrics on ports..
+- metrics are global for process of t-server (but what about the postgres processes): 
+  they are client-connections, and thus "most interesting" to collect metrics from 
+- many, 90%, of nrs are 0
+- even from  non-zero numbers, a lot is "available", but not necesarily "useful".
+- try asking questions... how many client-conn.. how many top-queries, how many dependent qries..
+- can we measure "in a session" ? 
+- even the pg_stat_stmnts are "aggregates" over all sessions that did the query
+  But the SEssion, the Client, needs to know what he was waiting for. 
+- Ideally, some timing per root-request is wanted ?
+- is there count of nr of outgoing calls per session or query? 
+- many metrics have count + time.. but always cumulative.. 
+- how can a session report time-spent, possibly broken down to time-spent-per-root-request, or per qury..
+
+curl from ports : do_curls.sh..
+set "|" as separator: cat node2_9000.out | sed 's/{/\|/g' | sed 's/} /\|/g' | sed 's/ /\|/g'
+filter out the zeros: awk -F'|' '$3 != 0 {print $1, $3 }'
+
+Big Question : which metrics are relevant to session or to root-request.. 
+

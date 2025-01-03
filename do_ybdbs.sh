@@ -12,7 +12,7 @@
 #
 #  verify first, show command
 
-portlist="5432 5433 5434"
+portlist="5432 5433 5434 5435"
 
 echo .
 echo do_ybdbs with script : \[  $* \] ... 
@@ -22,7 +22,9 @@ echo .
 for portnr in $portlist
 do
 
-  ysqlsh -p $portnr -X -f do_ash.sql
+  ysqlsh -p $portnr -X -f $1
+
+  sleep 3 
 
 done
 

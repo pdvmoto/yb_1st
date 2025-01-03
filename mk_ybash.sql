@@ -22,9 +22,10 @@ usage:
  - 
 
 todo, high level.
- - to connect ash to sessions: store client_addr and client_port: split_part..
- - log database stats.. datb_mst and datb_log
  - for V15, re-check PKs, notably ysql_dbid ? check on insert-key?
+ - to connect ash to sessions: store client_addr and client_port: split_part.. 
+    - not yet: for the moment ash.pid => client-pid on top_level_node_id
+ - log database stats.. datb_mst and datb_log : done
  - consider separate database for deployment, db_util ? 
  - need datamodel: 
     - store once: universe, cluster, node, master, tsever...  ybx_abcd_mst
@@ -32,15 +33,14 @@ todo, high level.
     - add FKs to/from tables - tablets - host
     - found_dt, log_dt, gone_dt : consistent names            sample_dt or log_dt
     - uuid or text ??? yb_servers.uuid : text.. but ash.top_level_node_id and yb-admin: text.
-    
     - consider abstracting sessions (+log), root_events (+log), queries (+log)
- - queries: 1 query_id, can have many root_requests From diff tsever, 
+ - queries: 1 query_id (qury_mst), can have many root_requests From diff tsever, 
     - quer_mst + quer_log (with fk to sess_mst) needed, qry-stats should be logged until... 
     - check: does a root_req only have one query_id ? (pg_stmnt_log = top?)
  - root_req: can generate an ash_events on several nodes.
     - duration of root_req can be measured on originating node. (top_server_uuid)
     - how to know if a root_req is finished ? (not exist )
- - session: sess_mst = pid + node + backend_start_dt, 
+ - session: sess_mst = tsrv_uuid(host) + pid + backend_start_dt, 
     - then generates sess_log records from pg_stats_activity for as long as it lives
  - save table-sizes: pg_tables, oid, dt_found, size-mb, table_uuid [, num_tablets..]
     but only save new records when data changes.. => ybx_get_tablogs is too slow.. reduce Freq..
@@ -60,7 +60,6 @@ todo, high level.
  - try logging "sessions" from client_node_ip: create_dt and gone_dt, or sess_id
  - to connect to sessions: store client_addr and client_port: split_part..
  - link ahs to activity, qry-text not the same, with/out $n substitutes
- - link ash to pg_stat_statements with query_id
  - save pg_stat_stmt + metrics (2 tables: stmnt_id, and id+metrics_in_interval)
  - detect tablets that have moved, try finding "where to" or "where from"
  - detect tablets on non-existing nodes.. close them..  (gone_time, closed by self or other...)? 
@@ -78,45 +77,41 @@ todo:
  - isolate pg_cron items in separate file, in case not present
  - blacklist works, but yb_local_tablets sometimes 0, sometimes not. thombstoned ?
  - speed up insert query get_ash_1, limit to check only last 900 sec, but seems to fail
- - num tablets : select * from yb_table_properties(16642 ) is wrong.., 
-    it relects nr tablest on startup of the tserver try this with auto-split, and see.
  - invalid byte sequence: some type conversion in get_ash ?
- - at some points, inserts of 10K records.. Why ??
  - check load of metrics-curling.. http://localhost:9004/prometheus-metrics
  - spot ClientRead as passive status ?  : no proof.. forget it for now
  - test on colocated db: only 1 tablet, and 1 table-name. complicated..?  hmm
  - unique key, still duplicates in ash: wait-event-aux is sometimes only distinquiser..
    revert to id as key !
  - speed up insertions into logtables with indexes, host+ sample_time
- - types: tservers().uuid is txt, top-level is uuid.. mix of types
  - pg_stat_statement: needs re-think. for exmpl, save every "interval" and reset
  - pg_stat_statement; could use a timestamp of "date-time found"
  - pg_stat_statement: consider merge with new stats every 10min ? 
  - split get_ash() in  3 : ash, pg_stat_statments, and pg_stat_activity
- - Q: how to relate queryid to pg_stat_activity, ask for enhancement ?
- - Q: how to relate sessionid to pid ? 
- - Q: Mechanism to run SQL on every node ? Scheduler? 
+ - Q: how to relate sessionid to pid ? : ybx_sess_mst (but min-start_date..) 
+ - Q: Mechanism to run SQL on every node ? Scheduler? : do_ashloop.sh, not quite good
  - keep list of servers, detect when server is down? - scrape from ybadmin?
- - keep list of masters (how? needs ybtool or yb-admin ? and copy-stdout)
+ - keep list of masters (how? needs ybtool or yb-admin ? and copy-stdout): do_snap.sh
  - store class-oid with tablets 
  - Q: detect migrated + dropped tablets, and dissapeared nodes. how ???
  - use dflts for host and timestamp in DDL?
  - Q: should we introcude a snap_id (snapshot) 
-   to link related data to 1 event or 1 point-in-time ?
+   to link related data to 1 event or 1 point-in-time ? : 
+    - snap_id seems of limited use.. data is logged over hosts, and snap_id sequence contains holes
  - need a repeatable "load generator", notaby IO-write and IO-read.
-    mk_longt.sql? 
+    - mk_longt.sql and tlong.sql are sort-of useful.. need ysql_bench to work with pg-15? 
  - script: wheris.sql: tablet or table, and list the nodes where it is/was.
  - script: yb_ash_int.sql: generate report for interval, define in top of file
  - script: yb_ash_topsql.sql: list most found SQL., per count, per mem, per rows, per calls.
  - t_long2.: insert a lot of data, generate long tx, long sql.
- - collect mem per snapshot: sum (pg_stat_act)
+ - collect mem per snapshot: sum (pg_stat_act): better: yb_servers_metrics().
  - use count + interval of 'OnCpu_Passive' to find cpu-saturation? 
 
 todo on tablets: improve monitoring and logic
  - yb_local_tablets, to Separate SCript, and detect down-nodes/moved tblts
  - yb_local_tablets: state=ok,suspect,gone, depending on node and last-seen?
  - store class-oid of table with tablets (why? not urgen?)
- - find Master-tserver (node or uuid) for tablet, how?
+ - find Master-tserver (node or uuid) for tablet, how? : do_snap.sh
  - yb_local_tablets: leader, boolean, needed. how to Find it ?
 
 more todo
@@ -128,7 +123,7 @@ more todo
  - test with fresh-start cluster: clean memory ? 
  - test with 1 or more nodes down + up. watch redistribution ?
  - Idle, ClientRead etc: make a list of Idle events
- - log yb-admin masters and tservers
+ - log yb-admin masters and tservers: done
 
 todo on rewrite:
  - all logging tables created in 1 script (add mk_osdata.sql ) 
@@ -139,8 +134,6 @@ todo on rewrite:
     3- do_snap: 1-per-cluseter not via crontab, bcse shell needed
  - use uuid or text, but only 1 type.. (prfer uuid, more efficient ? )
  
- 
-
 todo logging
  - is tx-asc a good pk ?
 

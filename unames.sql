@@ -5,6 +5,9 @@
 
 -- note: this coude _could_ go into ashloop, but not sure if right plce
 
+-- set start 
+SELECT extract(epoch FROM now())::float AS start_dt \gset
+
 -- make sure empty
 delete from ybx_kvlog where host = ybx_get_host () ; 
 
@@ -79,4 +82,9 @@ from gh gh
 delete from ybx_kvlog where host = ybx_get_host() ; 
 
 -- measure time if poss..
+
+with d as ( SELECT (extract(epoch FROM now())::float - :start_dt) * 1000 AS ela_ms )
+insert into ybx_log ( logged_dt, host,       component,     ela_ms,      info_txt )
+        select clock_timestamp(), ybx_get_host(), 'unames.sql', d.ela_ms, 'unames.sql, inserted into host_log' 
+        from d d ;
 
