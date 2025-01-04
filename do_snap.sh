@@ -38,8 +38,7 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   -- Universe: clean out infc, slurp the data, and insert
   delete from ybx_intf where host = ybx_get_host();
 
-  \! yb-admin -master_addresses $MASTERS get_universe_config     \
-    > /tmp/ybuniv.json
+  \! yb-admin -master_addresses $MASTERS get_universe_config  > /tmp/ybuniv.json
 
   COPY ybx_intf ( slurp )
   from '/tmp/ybuniv.json'
@@ -60,8 +59,8 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   insert into ybx_univ_log ( snap_id
                            , univ_uuid, clst_uuid, version, info )
   select :snap_id
-  ,   slurp::json->>'universeUuid'    univ_uuid
-  ,   slurp::json->>'clusterUuid'     clst_uuid
+  ,   slurp::json->>'universeUuid'  as  univ_uuid
+  ,   slurp::json->>'clusterUuid'   as  clst_uuid
   , ( slurp::json->>'version' )::int    version
   ,   slurp
   from ybx_intf if
@@ -84,11 +83,11 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   -- verify 
   insert into ybx_mast_log ( snap_id, mast_uuid, host, port, state, role )
   select  :snap_id 
-  , split_part ( slurp, '|', 1 ) as mast_uuid  
-  , split_part ( slurp, '|', 2 ) as host  
-  , split_part ( slurp, '|', 3 )::int as port  
-  , split_part ( slurp, '|', 4 ) as state  
-  , split_part ( slurp, '|', 5 ) as role  
+  , split_part ( slurp, '|', 1 )::uuid  	as mast_uuid  
+  , split_part ( slurp, '|', 2 ) 		as host  
+  , split_part ( slurp, '|', 3 )::int 		as port  
+  , split_part ( slurp, '|', 4 ) 		as state  
+  , split_part ( slurp, '|', 5 ) 		as role  
   from ybx_intf order by id 
   returning * ;
 
@@ -109,7 +108,7 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   insert into ybx_tsrv_log ( snap_id, tsrv_uuid, host, port, status
                            , rd_psec, wr_psec, uptime ) 
   select  :snap_id 
-  , split_part ( slurp, '|', 1 )         as tsrv_uuid  
+  , split_part ( slurp, '|', 1 )::uuid   as tsrv_uuid  
   , split_part ( slurp, '|', 2 )         as host  
   , split_part ( slurp, '|', 3 )::int    as port  
   , split_part ( slurp, '|', 5 )         as status  
