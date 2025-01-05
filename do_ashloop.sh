@@ -19,7 +19,7 @@
 #
 
 # a bit quick, during benchmarkng, but set to 5 or 10min later
-N_SECS=120
+N_SECS=180
 F_SEM=/tmp/ybx_ash_off.sem
 
 while true 
@@ -35,27 +35,11 @@ do
   
     # snapshot should preceed ash, to catch new tsevers
     # but is only needed on 1 node
-    # /usr/local/bin/do_snap.sh
+    /usr/local/bin/do_snap.sh
 
     ysqlsh -h $HOSTNAME -X <<EOF
 
-      \timing
-
-      select ybx_get_datb ();
-
-      select ybx_get_tblts () ;
-      select ybx_get_tblt () ;
-
-      select ybx_get_evlst() as added_events;
-
-      select ybx_get_qury () ;  
-      select ybx_get_sess () ;
-
-      select ybx_get_ash () ;
-      select ybx_get_ashy () ;
-
-      -- use this sql to include host-data for host_mst
-      \i /usr/local/bin/unames.sql
+      \i /usr/local/bin/do_ash.sql
 
 EOF
 

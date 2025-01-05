@@ -8,20 +8,20 @@ generic todo list
  - create subdir with sh-scripts to run evey N seconds: ashloop, unames, master-log, tserver-log...
 
 todo:
- - detect new combinations for ybx_mast_mst and ybx_tsrv_mst : 
+ - Master data: detect new combinations for univ_mst, host_mst, mast_mst and tsrv_mst : 
  - has to act as decoding between uuid and host.
     - snap_id ( = also found_dt )
     - host (where it runs, not where it is found!)
-    - tsrv_uuid.
     - pk: host + tsrv , the snap_id is  just a time-indicator.
+ - tables and tablets for colocations
 
 next
  - log some server-data: use script, function.. use unames + yb_func().. just log /180sec
  - set grafana open
  - run some load..
- - edit scripts + instructions to deploy:
-    - yb_init.sql
-    - mk_ybash.sql
+ - re-edit scripts + instructions to deploy:
+    - yb_init.sql (still needed ?) 
+    - mk_ybash.sql : move all to mk_yblog.sql
       - do_stuff.sh, do_ashloop.sh, do_sadc.sh
     - yb_osmetrics.sql
     - unames.sql + sh (all nodes)
