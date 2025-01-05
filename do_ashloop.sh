@@ -2,22 +2,24 @@
 
 # do_ashloop.sh: collect ash and tablet data in loop of 5min (300sec)
 #
-# usage; copy to each node and start with nohup.
-#   nohup ./do_ashloop.sh & 
+# usage; 
+#   copy to each node and start with nohup.
+#   start using st_ashloop.sh or do_stuff.sh 
 # 
 # verify running with : 
+#    tail on logfile
 #    select host, min(sample_time) earliest_sample, max(sample_time) latest_sample from ybx_ash group by host order by 3 desc ;
 #
 # todo:
 #   - configur nr seconds as parameter, 120sec seems ok for now, measure durations..
-#   - use semaphore to stop running
+#   - SQL in separate file(s), easier to adjust, loop.sh just does the looping..
+#   - use semaphore to stop running: done.
 #   - test sleep-pg vs sleep-linux, consume a pg-process, detect sleep-wait ? 
 #   - configure for credentials ? 
-#   - add detection of new event where not exist in ybx_ash_eventlist
 #
 
 # a bit quick, during benchmarkng, but set to 5 or 10min later
-N_SECS=180
+N_SECS=120
 F_SEM=/tmp/ybx_ash_off.sem
 
 while true 
@@ -39,12 +41,18 @@ do
 
       \timing
 
-      select ybx_get_ash () ;
+      select ybx_get_datb ();
+
       select ybx_get_tblts () ;
+      select ybx_get_tblt () ;
+
       select ybx_get_evlst() as added_events;
 
       select ybx_get_qury () ;  
       select ybx_get_sess () ;
+
+      select ybx_get_ash () ;
+      select ybx_get_ashy () ;
 
       -- use this sql to include host-data for host_mst
       \i /usr/local/bin/unames.sql
