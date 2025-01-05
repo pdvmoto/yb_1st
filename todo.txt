@@ -119,3 +119,81 @@ filter out the zeros: awk -F'|' '$3 != 0 {print $1, $3 }'
 Big Question : which metrics are relevant to session or to root-request.. 
 
 
+Regarding Datamodel... 
+
+Aim is currently to find heavy processes and heavy queries.
+Spotting underlying tabblets / tables may/should follow from that.
+But other may be more interested to dive directly into the storage-layer
+(as thew metrics on port 9000 seem to focus on rocksdb)
+
+
+Central, I think, is the "session". identified from from pg_stat_activity
+
+Session, a postgres-process with a pid on a host, belongs to a tserver, on a host
+Session also links to an "application" or some component that is initiating work on the system.
+table: ybx_sess_mst: try to catch the master record for every session.
+
+My main source for session-data is pg_stat_activity.
+
+The Session is then linked to ASH, where the work is "polled" from yb_act_sess_hist:
+table: ybx_ashy_log : data logged from yb_active_session_history
+
+ASH records are local to a tserver, 
+and belong to a session or parent_process, possibly via root-request
+But that RR is hard to "spot": does it belong to the Session, to the tsrver, or to the query? 
+possibly the link of the three. TBD.
+
+On the Sessions, We can regularly "poll" logging data out of a session from pg_stat_activity: 
+table : ybx_sess_log, regular polled data from pg_stat_activity
+
+
+Looking upwards from session, the session is initiated at a t-server, 
+and we can regularly capture (scrape) data from tserver 
+via yb-admin and function yb_server_metrics(). And also via port 9000/prometeus
+table: ybx_tsrv_mst : 1 record per tserver
+table: ybx_tsrv_log : regular polled data, e.g. memory, threads, cpu...
+
+Similarly, we can capture data for universe and yugabyte-master
+table: ybx_mast_mst: 1 record per master
+table: ybx_mast_log: polled data from yb-admin
+
+Back to Sessions, and queries.
+Both the session pg_stat_activity) and the ASH-record contain a query_id.
+We can capture query-data from pg_stat_statements, resulting in :
+ybx_qury_mst : just signal the existance of the qry, and act as masater j+ linking-pin
+ybx_qury_log : capture data per t-server from pg_stat_statements
+
+note that the cummulative data in pg_stat_stmt is not relatable to a session (yet)
+
+Possibly there is a query-plan (explain plan) in there, 
+and a query can have muliple of those plans
+table: ybx_qury_pln : some as yet unknown way to store a plan...
+
+
+For storage details, we know ASH acts on tablets, local to the node where the ash is 
+ybx_tblt_mst : 1 record per tablet (which will have at least 3replicas... )
+ybx_tblt_rep : replica, local to a t-server, 
+Note that a tablet_replicat will have "role": leader or follower or... 
+
+Tablets are linked to tables, and becasue of possible "colocation" 
+this will require an n:n. Modelling this out: table  + linking entity:
+ybx_tabl_mst : master record per table, key is table_uuid, and oid links back to postgres.
+ybx_tbl_log  : info from pg_stat_tables, per tsrve3r, per log_dt ?
+ybx_tata_lnk : linking table to tablet: just two keys ?
+
+tables will belong to a database, and from pg_database views we can collect info on those:
+ybx_datb_mst : 1 record per database, key is datid, the oid inside postgres.
+ybx_datb_log : regular polled data, per t-server key is datid + tsrverk + log_dt
+
+The whole reasoning leads to an ERD, and to a primitive script to create the tables.
+in real-life, the constraints may have to be left-out 
+because of the order in which we can collect the data: details first, meta-data to be derived.
+
+script: attached.
+two partial erds: attached..
+
+scripts and functions to collect the data: still in messy development. partly working.
+
+graphana example.. attached.
+
+
