@@ -118,7 +118,41 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   from ybx_intf order by id 
   returning * ;
 
+
   select '-- $0 -- tsrv_log created -- ' as msg ;
+ 
+  -- pick the metrics from yb-function and update records  
+  with 
+    m as ( select 
+    tm.uuid::uuid as tsrv_uuid
+  , (tm.metrics::json->>'memory_free')::bigint/1024/1024      as mem_free_mb
+  , (tm.metrics::json->>'memory_total')::bigint/1024/1024     as mem_total_mb
+  , (tm.metrics::json->>'memory_available')::bigint/1024/1024 as mem_avail_mb
+  , (tm.metrics::json->>'tserver_root_memory_limit')::bigint/1024/1024        as ts_root_mem_limit_mb
+  , (tm.metrics::json->>'tserver_root_memory_soft_limit')::bigint/1024/1024   as ts_root_mem_slimit_mb
+  , (tm.metrics::json->>'tserver_root_memory_consumption')::bigint/1024/1024  as ts_root_mem_cons_mb
+  , (tm.metrics::json->>'cpu_usage_user')::real               as cpu_user
+  , (tm.metrics::json->>'cpu_usage_system')::real             as cpu_syst
+  , tm.status
+  , tm.error
+  from  yb_servers_metrics () tm
+  )
+  update ybx_tsrv_log ytl
+    set mem_free_mb             = m.mem_free_mb
+      , mem_total_mb            = m.mem_total_mb
+      , mem_avail_mb            = m.mem_avail_mb
+      , ts_root_mem_limit_mb    = m.ts_root_mem_limit_mb
+      , ts_root_mem_slimit_mb   = m.ts_root_mem_slimit_mb
+      , ts_root_mem_cons_mb     = m.ts_root_mem_cons_mb
+      , cpu_user                = m.cpu_user
+      , cpu_syst                = m.cpu_syst
+      , ts_status               = m.status
+      , ts_error                = m.error
+  from m m 
+  where ytl.tsrv_uuid = m.tsrv_uuid
+    and ytl.snap_id   = :snap_id ;  -- ( select max ( id) from ybx_snap_log ) ; 
+
+  select '-- $0 -- tsrv_log updated  -- ' as msg ;
 
   -- final clean out
   delete from ybx_intf where host = ybx_get_host() ;  

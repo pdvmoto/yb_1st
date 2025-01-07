@@ -8,15 +8,17 @@ generic todo list
  - create subdir with sh-scripts to run evey N seconds: ashloop, unames, master-log, tserver-log...
 
 todo:
+ - quick report on counts: how much data was collected..
  - Master data: detect new combinations for univ_mst, host_mst, mast_mst and tsrv_mst : 
+ - add event-listing to main scripts: done, needs testing
  - has to act as decoding between uuid and host.
     - snap_id ( = also found_dt )
     - host (where it runs, not where it is found!)
     - pk: host + tsrv , the snap_id is  just a time-indicator.
- - tables and tablets for colocations
+ - tables and tablets for colocations: partly done, needs Testing !
 
 next
- - log some server-data: use script, function.. use unames + yb_func().. just log /180sec
+ - log more server-data: use script, function.. use unames + yb_func().. just log /180sec
  - set grafana open
  - run some load..
  - re-edit scripts + instructions to deploy:
@@ -31,13 +33,7 @@ need a way to read key=values into table ybx_ingest: (id-seq, host, key, value )
 that way, reading from varz or just files is easier..
 => done in unames.sql
 
-to pick up OS data: unames.sh
-to pick up disk usage echo Disk_usage=`du -sm /root/var`
-to pick up memory: curl -s $HOSTNAME:7000/memz?raw
-to pick up memory: curl -s $HOSTNAME:9000/memz?raw
-some load-info from top: top -n1 | head -n4
-
-get master info: 
+get master info, etc: 
 ybmast | expand | tail -n3 | sed 's/ \+/\|/g' 
 
 
@@ -60,7 +56,8 @@ other sources of data: for tserver
 select * from yb_heap_stats();  
 
 -- metrics can be part of snapshot.. 
-select * from yb_servers_metrics () ;
+select * from yb_servers_metrics () ; 
+done, in do_snap
 
 select tl.host, tm.status, tm.error
 , (tm.metrics::json->>'memory_free')::bigint/1024/1024      as mem_free_mb
@@ -195,5 +192,32 @@ two partial erds: attached..
 scripts and functions to collect the data: still in messy development. partly working.
 
 graphana example.. attached.
+
+
+
+Request to add Event_ID to the views yb_active_session_history and to yb_event_desc.
+
+The view yb_active_session_history is useful, but in some cases we want to "keep that history" and store it into a table.
+
+There are four text-fields: wait_event, _type, _class and _component.
+For storing the data, having 4 text-fields, in 1000s or millions of records, is less efficient. 
+Furthermore, from saving a few days of ASH-records, we found there are probably less than 100 unique combinations of 
+event, type, class, and component. 
+This was confirmed by yb_wait_ev_desc: 47 records in our case. 
+Even if multiplied by the possibilities for "wait_event_component" this remains a manageable nr.
+Hence the suggestion to add the ID field to both views.
+A simple "int" would suffice for storing the ASH data into a table, saving on storage, memory and network-traffic. 
+
+It will therefore be useful if the view yb_wait_event_desc 
+will display an ID (wait_ev_id) that can be referred by the records in yb_wait_event_descr.
+
+Note1 that further savings in the size of (storing) the ASH record are possible; a lot of client- and root-req-related info seems to repeat and seems to depend solely on the Root_Req. Separate issue to follow.
+
+
+Root_request_id.
+I am trying to figure out myself what the rr_id actually "means". 
+
+The view yb_active_session_history contains a numbrer of fields that seem to depend on the Root_req_id.
+
 
 

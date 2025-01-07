@@ -23,6 +23,8 @@ select ybx_get_qury () ;
 
 select ybx_get_ashy () ;
 
+select ybx_get_evnt () ; 
+
 -- old but keep
 
 select ybx_get_tblts () ;

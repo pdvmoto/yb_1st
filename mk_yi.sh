@@ -144,11 +144,14 @@ do
   docker cp `which ff`      $hname:/usr/local/bin/ff
   docker exec -it $hname chmod 755 /usr/local/bin/ff
 
-  echo $hname : adding do_ashloop.sh and st_ startscript ...
+  echo $hname : adding do_ashloop.sh, start_script and do_ash.sql
+
   docker cp do_ashloop.sh             $hname:/usr/local/bin/do_ashloop.sh
   docker exec -it $hname   chmod 755         /usr/local/bin/do_ashloop.sh
   docker cp st_ashloop.sh             $hname:/usr/local/bin/st_ashloop.sh
   docker exec -it $hname   chmod 755         /usr/local/bin/st_ashloop.sh
+  docker cp do_ash.sql                $hname:/usr/local/bin/do_ash.sql
+  docker exec -it $hname   chmod 755         /usr/local/bin/do_ash.sql
 
   echo $hname : add unames.sql, -.sh, do_snap.sh
   docker cp unames.sh                 $hname:/usr/local/bin/unames.sh
