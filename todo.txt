@@ -6,6 +6,7 @@ generic todo list
  - investigate multi-region and replication.
  - log an aas; avg-act-ses, find baseload ? 
  - create subdir with sh-scripts to run evey N seconds: ashloop, unames, master-log, tserver-log...
+ - need solution to faster push
 
 todo:
  - quick report on counts: how much data was collected..
