@@ -289,8 +289,8 @@ CREATE TABLE ybx_ash (
 	ysql_session_id       int8 NULL, -- no longer needed ? 
 	pid                   int8 NULL,
 	client_node_ip        text NULL,
-  client_addr           inet 
-  client_port           integer 
+  client_addr           inet ,
+  client_port           integer ,
 	wait_event_aux        text NULL,
 	sample_weight         real NULL,
 	wait_event_type       text NULL,
