@@ -9,11 +9,11 @@ beware: needs unames.sh
 
 
 -- set start 
-SELECT extract(epoch FROM now())::float AS start_ash_dt \gset
+SELECT extract(epoch FROM now())::numeric AS start_ash_dt \gset
 
 select ybx_get_datb () ;
 
-select ybx_get_tablog () ;
+-- select ybx_get_tablog () ;
 
 select ybx_get_tblt () ;
 
@@ -27,17 +27,17 @@ select ybx_get_evnt () ;
 
 -- old but keep
 
-select ybx_get_tblts () ;
+-- select ybx_get_tblts () ;
 
-select ybx_get_ash () ;
+-- select ybx_get_ash () ;
 
-select ybx_get_evlst() ; 
+-- select ybx_get_evlst() ; 
 
 
 -- separate script for host-log, scraping..
 
 -- set start 
-SELECT extract(epoch FROM now())::float AS start_hostlog_dt \gset
+SELECT extract(epoch FROM now())::numeric AS start_hostlog_dt \gset
 
 -- make sure empty
 delete from ybx_kvlog where host = ybx_get_host () ; 
@@ -114,17 +114,17 @@ delete from ybx_kvlog where host = ybx_get_host() ;
 
 -- measure time for scraping, if poss..
 
-with d as ( SELECT (extract(epoch FROM now())::float - :start_hostlog_dt) * 1000 AS ela_ms )
+with d as ( SELECT (extract(epoch FROM now())::numeric - :start_hostlog_dt ) * 1000 AS ela_ms )
 insert into ybx_log ( logged_dt, host,            component,     ela_ms,      info_txt )
-        select clock_timestamp(), ybx_get_host(), 'get_hostlog', d.ela_ms
+        select clock_timestamp(), ybx_get_host(), 'get_hostlog', round ( d.ela_ms, 3) 
               , 'do_ash, uname.sh scraped data into ybx_host_log' 
         from d d ;
 
 -- measure total time for do_ash, if poss..
 
-with d as ( SELECT (extract(epoch FROM now())::float - :start_ash_dt) * 1000 AS ela_ms )
+with d as ( SELECT (extract(epoch FROM now())::numeric - :start_ash_dt     ) * 1000  AS ela_ms )
 insert into ybx_log ( logged_dt, host,            component,     ela_ms,      info_txt )
-        select clock_timestamp(), ybx_get_host(), 'do_ash.sql', d.ela_ms
+        select clock_timestamp(), ybx_get_host(), 'do_ash.sql', round ( d.ela_ms, 3) 
               , 'do_ash, total time...'  
         from d d ;
 

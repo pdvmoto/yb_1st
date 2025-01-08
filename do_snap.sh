@@ -80,6 +80,22 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   from '/tmp/ybmast.out'
   WitH ( format text, HEADER false, NULL '' ) ;
 
+  -- mast_mst, in case we find new ones..
+  with nm as ( 
+    select  :snap_id 				as snap_id
+    , split_part ( slurp, '|', 1 )::uuid  	as mast_uuid  
+    , split_part ( slurp, '|', 2 ) 	    	as host  
+    , split_part ( slurp, '|', 3 )::int     	as port  
+    from ybx_intf
+  )
+  insert into ybx_mast_mst ( snap_id, mast_uuid, host, port )
+  select  nm.snap_id, nm.mast_uuid, nm.host, nm.port 
+  from nm 
+  where not exists ( select 'x' 
+                     from ybx_mast_mst om 
+                      where om.mast_uuid = nm.mast_uuid ) 
+  returning * ;
+
   -- verify 
   insert into ybx_mast_log ( snap_id, mast_uuid, host, port, state, role )
   select  :snap_id 
@@ -105,20 +121,43 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   from '/tmp/ybtsrv.out'
   WitH ( format text, HEADER false, NULL '' ) ;
 
+  -- verify..
+   select  :snap_id                       as snap_id
+          , split_part ( slurp, '|', 1 )::uuid   as tsrv_uuid
+          , split_part ( slurp, '|', 2 )         as host
+          , split_part ( slurp, '|', 3 )::int    as port
+          from ybx_intf ; 
+
+  with nt as (
+	  select  :snap_id  		 	 as snap_id
+	  , split_part ( slurp, '|', 1 )::uuid   as tsrv_uuid  
+	  , split_part ( slurp, '|', 2 )         as host  
+	  , split_part ( slurp, '|', 3 )::int    as port  
+          from ybx_intf
+  )
+  insert into ybx_tsrv_mst ( snap_id, tsrv_uuid, host, port ) 
+  select  snap_id , tsrv_uuid, host, port 
+  from nt
+  where not exists ( select 'x' 
+		from ybx_tsrv_mst ot
+		where nt.tsrv_uuid = ot.tsrv_uuid
+		) 
+  returning snap_id, tsrv_uuid, host, port ;
+
+
   insert into ybx_tsrv_log ( snap_id, tsrv_uuid, host, port, status
-                           , rd_psec, wr_psec, uptime ) 
-  select  :snap_id 
-  , split_part ( slurp, '|', 1 )::uuid   as tsrv_uuid  
-  , split_part ( slurp, '|', 2 )         as host  
-  , split_part ( slurp, '|', 3 )::int    as port  
-  , split_part ( slurp, '|', 5 )         as status  
-  , split_part ( slurp, '|', 6 )::real   as rd_psec  
-  , split_part ( slurp, '|', 7 )::real   as wr_psec  
-  , split_part ( slurp, '|', 8 )::bigint as uptime  
-  from ybx_intf order by id 
-  returning * ;
-
-
+                           , rd_psec, wr_psec, uptime )
+  select  :snap_id  
+  , split_part ( slurp, '|', 1 )::uuid   as tsrv_uuid
+  , split_part ( slurp, '|', 2 )         as host
+  , split_part ( slurp, '|', 3 )::int    as port
+  , split_part ( slurp, '|', 5 )         as status
+  , split_part ( slurp, '|', 6 )::real   as rd_psec
+  , split_part ( slurp, '|', 7 )::real   as wr_psec
+  , split_part ( slurp, '|', 8 )::bigint as uptime
+  from ybx_intf order by id  
+  returning tsrv_uuid, host, port, status ;
+  
   select '-- $0 -- tsrv_log created -- ' as msg ;
  
   -- pick the metrics from yb-function and update records  
