@@ -84,10 +84,10 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   insert into ybx_mast_log ( snap_id, mast_uuid, host, port, state, role )
   select  :snap_id 
   , split_part ( slurp, '|', 1 )::uuid  	as mast_uuid  
-  , split_part ( slurp, '|', 2 ) 		as host  
+  , split_part ( slurp, '|', 2 ) 		      as host  
   , split_part ( slurp, '|', 3 )::int 		as port  
-  , split_part ( slurp, '|', 4 ) 		as state  
-  , split_part ( slurp, '|', 5 ) 		as role  
+  , split_part ( slurp, '|', 4 ) 		      as state  
+  , split_part ( slurp, '|', 5 ) 		      as role  
   from ybx_intf order by id 
   returning * ;
 

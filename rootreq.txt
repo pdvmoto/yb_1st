@@ -24,3 +24,34 @@ order by 3 desc, root_request_id ;
 This does not concur with the description (intention) that "an rr is generated for every query run", in which case I would expect that a rr always only has 1 query_id on it. Is this a possible bug in ash, or can a rr really process mulitple queries ? What if the client does : select my_function (); , where the function contains multiple queries. I have several of those functions for my ash-collection jobs.
 
 ccc:
+
+
+clarify the root_request_id in ash-view.
+
+
+The root_request to be a separate view in the ASH system.
+
+From ussing the view yb_active_session_history, we learned about the root_request. 
+A root_req seems to point back to a session (from pg_stat_activity). It represents the action of a session that executes a specific query (or set of queries).
+
+A session is identifiable via pg_stat_activity, and a session can seems to initiate the root-req.
+An ASH-record, on any server, points back to the session that initiated its work, and the root_req seems to be the linking pin.
+
+There may be value in defining the root request more explicitly:
+1)  As the linking item between Session(pid-at-tsrver, or client-connection), and an ASH-record. The root_req view could hold data that is now duplicated in ASH-records, and 
+2) To better understand and to better track the way a session or query is handing work out to the t-servers in a cluster. 
+
+IMHO, a view like "yb_root_request" would hold the following information (columns):
+ - rr_uuid - unique, acting as the primary key
+ - Top_level_node_id, the uuid of the t-server
+ - (session_)pid,  pid of the server-process on the host where the t-server is located
+ - Query_id of stmnt that is being processeed (an rr does/should process 1 single SQL ? check? ) 
+ - [optional] Relevant session info like client-host, port, app_name
+ - [optional] The start_time (and end time?) of the root_id
+
+Some more remarks: 
+ - Is the rr_uuid globally-uniquew inside a cluster? double check: is that the case ? 
+ - Does a rr really only process 1 query ? if not, how to deal with multiple queries per rr ? 
+ - By keeping start_time, the duration of a root id can be determined (by last ASH-record ?). keeping and end-time as well would be even more precise.
+ - Unsure if this view would be visible on all tservers, or only on the tserver where the request originates. When a tserver hold ASH-records (in yb_act_sess_hist), should a future view of yb_root_req also hold a record for each root_req in ASH, or should that rr-record only be visible in the originating tserver (save on memory, space..) ? 
+
