@@ -1,7 +1,7 @@
 #!/bin/ksh
 # set -v -x
 #
-# mk_yi.sh: generate a yb cluster in Podman, interactive nodes (servers).
+# mk_yi.sh: generate a yb cluster in docker, interactive nodes (servers).
 #
 # This time: same 6+ nodes, same ports exposed.
 # trick: start with some other program to similate server-light containers, 
@@ -40,15 +40,20 @@
 
 # choose an image
 # YB_IMAGE=yugabytedb/yugabyte:latest
-# YB_IMAGE=yugabytedb/yugabyte:2.19.0.0-b190        \
+# YB_IMAGE=yugabytedb/yugabyte:2.19.0.0-b190        
 # YB_IMAGE=yugabytedb/yugabyte:2.20.1.0-b97
 # YB_IMAGE=yugabytedb/yugabyte:2.20.1.3-b3
 # YB_IMAGE=yugabytedb/yugabyte:2.21.0.0-b545
 # YB_IMAGE=yugabytedb/yugabyte:2.21.1.0-b271
 # YB_IMAGE=yugabytedb/yugabyte:2024.1.1.0-b137
+  YB_IMAGE=pachot/yb-pg15
+# YB_IMAGE=abhinabsaha/yugabytedb:latest_with_pid
+
+# 26 Aug, didnt have yb_ash view ?
+# YB_IMAGE=yugabytedb/yugabyte:2.20.6.0-b66
 
 # latest was broken on 21-aug-2024?
-YB_IMAGE=yugabytedb/yugabyte:latest
+# YB_IMAGE=yugabytedb/yugabyte:latest
 
 # get some file to log stmnts, start simple
 LOGFILE=mk_nodes.log
@@ -70,7 +75,8 @@ sleep 2
 #  - how to get to K8s ??
 #
 
-  nodenrs="2 3 4"
+  nodenrs="2 3 4 5"
+# nodenrs="6 "
 # nodenrs="  "
 
 echo `date` $0 : ---- creating cluster for nodes : $nodenrs -------
@@ -128,6 +134,8 @@ do
   echo $hname : adding ybflags.conf
   podman cp ybflags.conf $hname:/home/yugabyte/
 
+  # note: repeating steps for several (7 ?) files.. need function?
+
   echo $hname : adding psg ...
   podman cp `which psg`     $hname:/usr/local/bin/psg
   podman exec -it $hname chmod 755 /usr/local/bin/psg
@@ -136,11 +144,22 @@ do
   podman cp `which ff`      $hname:/usr/local/bin/ff
   podman exec -it $hname chmod 755 /usr/local/bin/ff
 
-  echo $hname : adding do_ashloop.sh and st_ startscript ...
+  echo $hname : adding do_ashloop.sh, start_script and do_ash.sql
+
   podman cp do_ashloop.sh             $hname:/usr/local/bin/do_ashloop.sh
   podman exec -it $hname   chmod 755         /usr/local/bin/do_ashloop.sh
   podman cp st_ashloop.sh             $hname:/usr/local/bin/st_ashloop.sh
   podman exec -it $hname   chmod 755         /usr/local/bin/st_ashloop.sh
+  podman cp do_ash.sql                $hname:/usr/local/bin/do_ash.sql
+  podman exec -it $hname   chmod 755         /usr/local/bin/do_ash.sql
+
+  echo $hname : add unames.sql, -.sh, do_snap.sh
+  podman cp unames.sh                 $hname:/usr/local/bin/unames.sh
+  podman exec -it $hname   chmod 755         /usr/local/bin/unames.sh
+  podman cp unames.sql                $hname:/usr/local/bin/unames.sql
+  podman exec -it $hname   chmod 755         /usr/local/bin/unames.sql
+  podman cp do_snap.sh                $hname:/usr/local/bin/do_snap.sh
+  podman exec -it $hname   chmod 755         /usr/local/bin/do_snap.sh
 
   echo $hname : add startsadc.sh or similar to help collect sar
   podman cp startsadc.sh    $hname:/usr/local/bin/startsadc.sh
@@ -149,8 +168,12 @@ do
   # podman exec -it $hname startsadc.sh &
   
   echo $hname : add do_stuff.sh or similar to help start all
-  podman cp do_stuff.sh    $hname:/usr/local/bin/do_stuff.sh
+  podman cp do_stuff.sh     $hname:/usr/local/bin/do_stuff.sh
   podman exec -it $hname chmod 755 /usr/local/bin/do_stuff.sh
+
+  echo $hname : add yb_boot.sh or similar to boot ybdb
+  podman cp yb_boot.sh      $hname:/usr/local/bin/yb_boot.sh
+  podman exec -it $hname chmod 755 /usr/local/bin/yb_boot.sh
 
   # more tooling... make sure the files are in working dir
 
@@ -174,7 +197,7 @@ EOF
   echo $hname : tools installed.
   echo .
 
-  sleep 2
+  sleep 1
 
 done
 # for all nodes: node-created
@@ -194,10 +217,15 @@ echo .
 
 # podman exec node2 yugabyted start --advertise_address=node2 --background=true --ui=true
 
-  podman exec node2 yugabyted start \
+  startcmd=`echo podman exec node2 yugabyted start \
     --advertise_address=node2       \
     --tserver_flags=flagfile=/home/yugabyte/ybflags.conf \
-     --master_flags=flagfile=/home/yugabyte/ybflags.conf 
+     --master_flags=flagfile=/home/yugabyte/ybflags.conf `
+
+
+  echo $hname ... creating yugabyte instance:
+  echo $startcmd >> $LOGFILE
+  echo $startcmd
 
 echo .
 echo database created on node2: 3 sec to Cntr-C .. or .. loop Start over all nodes.
@@ -205,7 +233,15 @@ echo .
 echo note: we tolerate an error for node2 to allow uniform command for all nodes.
 echo .
 
-sleep 3
+sleep 6
+
+echo verify node2..
+podman exec node2 yugabyted status 
+echo .
+echo another 6 sec ...
+
+
+sleep 6
 
 for nodenr in $nodenrs
 do
@@ -350,7 +386,7 @@ echo .    - run yb_init.sql and demo_fill.sql to load often-used functions.
 echo .    - run mk_ybash.sql prepare ash-logging
 echo .    - run mk_ashvws.sql to prepare live-ash viewing via gv$
 echo .    - use do_stuff.sh to run startsadc.sh and do_ashloop.sh
-echo .    - activate st/do_ahsloop.sh on every node,  why no nohup from podman exec? 
+echo .    - activate st/do_ahsloop.sh on every node,  why no nohup from docker exec? 
 echo .    - activate startsadc.sh to use sar
 echo .    - run demo_fill.sql to load demo-table t, use checks/monitor.
 echo .    - run mk_longt.sql to fill large-ish table
