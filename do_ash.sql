@@ -116,11 +116,7 @@ delete from ybx_kvlog where host = ybx_get_host() ;
 
 with d as ( SELECT (extract(epoch FROM now())::numeric - :start_hostlog_dt ) * 1000 AS ela_ms )
 insert into ybx_log ( logged_dt, host,            component,     ela_ms,      info_txt )
-<<<<<<< HEAD
         select clock_timestamp(), ybx_get_host(), 'get_hostlog', round ( d.ela_ms::numeric, 3)
-=======
-        select clock_timestamp(), ybx_get_host(), 'get_hostlog', round ( d.ela_ms, 3) 
->>>>>>> d0fccf7dd72d898f860cf8709887f15308365ecb
               , 'do_ash, uname.sh scraped data into ybx_host_log' 
         from d d ;
 
@@ -128,11 +124,7 @@ insert into ybx_log ( logged_dt, host,            component,     ela_ms,      in
 
 with d as ( SELECT (extract(epoch FROM now())::numeric - :start_ash_dt     ) * 1000  AS ela_ms )
 insert into ybx_log ( logged_dt, host,            component,     ela_ms,      info_txt )
-<<<<<<< HEAD
         select clock_timestamp(), ybx_get_host(), 'do_ash.sql', round ( d.ela_ms::numeric, 3 ) 
-=======
-        select clock_timestamp(), ybx_get_host(), 'do_ash.sql', round ( d.ela_ms, 3) 
->>>>>>> d0fccf7dd72d898f860cf8709887f15308365ecb
               , 'do_ash, total time...'  
         from d d ;
 

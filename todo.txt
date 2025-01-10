@@ -9,10 +9,10 @@ generic todo list
  - need solution to faster push
 
 todo:
- - quick report on counts: how much data was collected..
+ - quick report on counts: how much data was collected..: chk_ash.sql
  - Master data: detect new combinations for univ_mst, host_mst, mast_mst and tsrv_mst : 
- - add event-listing to main scripts: done, needs testing
- - has to act as decoding between uuid and host.
+ - add event-listing to main scripts: done, needs testing: check.. ? 
+ - tsrv_mst has to act as decoding between uuid and host.
     - snap_id ( = also found_dt )
     - host (where it runs, not where it is found!)
     - pk: host + tsrv , the snap_id is  just a time-indicator.
@@ -32,7 +32,7 @@ next
 
 need a way to read key=values into table ybx_ingest: (id-seq, host, key, value )... all text..
 that way, reading from varz or just files is easier..
-=> done in unames.sql
+=> done in unames.sql in do_ash.sql and  unames.sh
 
 get master info, etc: 
 ybmast | expand | tail -n3 | sed 's/ \+/\|/g' 
@@ -221,4 +221,70 @@ I am trying to figure out myself what the rr_id actually "means".
 The view yb_active_session_history contains a numbrer of fields that seem to depend on the Root_req_id.
 
 
+-- notes on grap + helper functions.
+
+
+drop view ybg_tsrv_rwr; 
+create or replace view ybg_tsrv_rwr as 
+select sl.log_dt
+, t2.rd_psec n2_rds
+, t2.wr_psec n2_wrs
+, t3.rd_psec n3_rds
+, t3.wr_psec n3_wrs
+, t4.rd_psec n4_rds
+, t4.wr_psec n4_wrs
+, t5.rd_psec n5_rds
+, t5.wr_psec n5_wrs
+from ybx_snap_log sl
+   , ybx_tsrv_log t2
+   , ybx_tsrv_log t3
+   , ybx_tsrv_log t4
+   , ybx_tsrv_log t5
+where  1=1
+ and sl.id = t2.snap_id 
+ and sl.id = t3.snap_id
+ and sl.id = t4.snap_id
+ and sl.id = t5.snap_id
+ and t2.host = 'node2'
+ and t3.host = 'node3'
+ and t4.host = 'node4'
+ and t5.host = 'node5'
+order by sl.log_dt  ; 
+
+select log_dt, n2_rds, n2_wrs, n3_rds, n3_wrs, n4_rds, n4_wrs from graph_read_write order by log_dt  ; 
+
+drop view ybg_tsrv_cpu; 
+create or replace view ybg_tsrv_cpu as 
+select sl.log_dt
+, t2.cpu_user n2_usr
+, t2.cpu_syst n2_sys
+, t3.cpu_user n3_usr
+, t3.cpu_syst n3_sys
+, t4.cpu_user n4_usr
+, t4.cpu_syst m4_sys
+, t5.cpu_user m5_usr
+, t5.cpu_syst m5_sys
+from ybx_snap_log sl
+   , ybx_tsrv_log t2
+   , ybx_tsrv_log t3
+   , ybx_tsrv_log t4
+   , ybx_tsrv_log t5
+where  1=1
+ and sl.id = t2.snap_id 
+ and sl.id = t3.snap_id
+ and sl.id = t4.snap_id
+ and sl.id = t5.snap_id
+ and t2.host = 'node2'
+ and t3.host = 'node3'
+ and t4.host = 'node4'
+ and t5.host = 'node5'
+order by sl.log_dt  ; 
+
+
+-- better to get tsrv_uuid, include blacklisted tsrvs
+with h as ( select ybx_get_host() as host )
+ SELECT coalesce ( uuid::uuid, m.tsrv_uuid ) jj
+    FROM yb_servers () s, ybx_tsrv_mst m, h
+    WHERE s.host = h.host
+     and m.host = h.host ;
 
