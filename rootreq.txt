@@ -26,6 +26,46 @@ This does not concur with the description (intention) that "an rr is generated f
 ccc:
 
 
+
+-- use this to find RR with multiple queries..
+select al.root_request_id
+, count (distinct top_level_node_id) top_tsrv_1
+, count ( distinct pid) pid_1
+, count (distinct query_id) qryids
+, count ( distinct host ) hosts
+, count (*) cnt_total
+from ybx_ashy_log al
+where al.top_level_node_id::text not like '000%'
+and al.root_request_id::text not like '000%'
+and al.query_id not between 0 and 6
+group by 1
+order by  4 desc ;
+
+-- use this to find the queries for specific rrs..
+-- most (all) of the weird ones are from creating FDW 
+-- or from Count-queries from inside others..
+select root_request_id, al.query_id , qm.query
+from ybx_ashy_log al
+, ybx_qury_mst qm
+where al.query_id = qm.queryid
+and al.root_request_id::text in ( 'a3faa47f-a39b-d090-ff21-3ee5afe62b01'
+, '450a5ebc-b842-1768-f5be-a78fcdbd9aea', '4409b3ea-7b14-f278-b7c2-386b1b0df31c' )
+order by al.root_request_id , al.sample_time ;
+
+
+Found a possible explanation for the mulitple-queries on a sssingle RR:
+Checking the RRs where one session (tsrv+pid ) seems to contain multiple query_ids,
+I found..
+ - some RRs point to an FDW doing mapping/import/create-view, in my case, done by a remote call from grafana.
+ - some RRs point to a function: select function(args) ; in which the functiohn contains multiple queries. the repored queries at the RR seem to all belong inside the function. 
+ - some RRs contain quer_id in range 0..6, supposedly internal ones, on top of their "normal query".
+I think this accounts for all my found anomalies so far. 
+
+I would possibly conclude that a Root-request_id points back to a session (tsrv+pid) doing One Single Top-Level query (or some admin/overhead). The Ash-records for an RR can still contain other SQL (multiple query_ids), but they originate from 1 (toplevel?) call in the connected (app-)session.
+Could this be correct? 
+
+ 
+
 clarify the root_request_id in ash-view.
 
 
@@ -54,4 +94,5 @@ Some more remarks:
  - Does a rr really only process 1 query ? if not, how to deal with multiple queries per rr ? 
  - By keeping start_time, the duration of a root id can be determined (by last ASH-record ?). keeping and end-time as well would be even more precise.
  - Unsure if this view would be visible on all tservers, or only on the tserver where the request originates. When a tserver hold ASH-records (in yb_act_sess_hist), should a future view of yb_root_req also hold a record for each root_req in ASH, or should that rr-record only be visible in the originating tserver (save on memory, space..) ? 
+
 
