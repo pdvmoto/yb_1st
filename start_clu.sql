@@ -10,7 +10,7 @@
 
 # nodelist="node1 node2 node3 node4 node5 node6"
 # nodelist="node2 node3 node4 node5 node6 node7 node8 nodeX nodeY "
-nodelist="node2 node3 node4 node5"
+nodelist="node2 node3 node4 node5 node6 node7 "
 
 
 for node in $nodelist
@@ -45,6 +45,7 @@ EOF
 
   # docker exec -it $node startsadc.sh  
   # docker exec -it $node st_ashloop.sh 
+  sleep 2
   docker exec -it $node do_stuff.sh
 
 done

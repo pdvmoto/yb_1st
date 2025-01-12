@@ -27,7 +27,7 @@ do
 
   if [ -f ${F_SEM} ]; then
 
-    date "+%Y-%m-%dT%H:%M:%S do_ashloop.sh on ${HOSTNAME} : no ash, ${F_SEM} found "
+    date "+%Y-%m-%dT%H:%M:%S do_ashloop.sh on ${HOSTNAME} : ash Not running, ${F_SEM} found "
 
   else 
 

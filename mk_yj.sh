@@ -75,8 +75,8 @@ sleep 2
 #  - how to get to K8s ??
 #
 
-  nodenrs="2 3 4 5"
-# nodenrs="2 "
+# nodenrs="2 3 4 5"
+nodenrs="6 7 "
 # nodenrs="  "
 
 echo `date` $0 : ---- creating cluster for nodes : $nodenrs -------
@@ -104,6 +104,7 @@ do
     -p${yb7port}:7000 -p${yb9port}:9000      \
     -p${yb13port}:13433                      \
     -p${yb15port}:15433                      \
+    -v /Users/pdvbv/yb_data/$hname:/root/var \
     $YB_IMAGE                                \
     tail -f /dev/null `
  
