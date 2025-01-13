@@ -46,10 +46,16 @@ EOF
   fi
  
   echo .
-  date "+%Y-%m-%dT%H:%M:%S do_ashloop.sh on ${HOSTNAME} : sleeping ${N_SECS} ..."
+  date "+%Y-%m-%dT%H:%M:%S do_ashloop.sh on ${HOSTNAME} : sleeping ..."
   echo .
 
-  sleep $N_SECS
+  if [ -f /tmp/ash_sleep.sh ]; then
+      sh /tmp/ash_sleep.sh
+  else
+    echo .
+    echo $0 `date` going to sleep for dflt $N_SEC
+    sleep $N_SEC
+  fi
 
 done
 
