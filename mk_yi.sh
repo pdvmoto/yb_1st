@@ -75,8 +75,8 @@ sleep 2
 #  - how to get to K8s ??
 #
 
-  nodenrs="2 3 4 5"
-# nodenrs="2 "
+nodenrs="2 3 4 5 6 7 8 "
+# nodenrs="5 "
 # nodenrs="  "
 
 echo `date` $0 : ---- creating cluster for nodes : $nodenrs -------
@@ -156,6 +156,8 @@ do
   docker exec -it $hname   chmod 755         /usr/local/bin/st_ashloop.sh
   docker cp do_ash.sql                $hname:/usr/local/bin/do_ash.sql
   docker exec -it $hname   chmod 755         /usr/local/bin/do_ash.sql
+  docker cp ash_sleep.sh              $hname:/tmp/ash_sleep.sh
+  docker exec -it $hname   chmod 755         /tmp/ash_sleep.sh
 
   echo $hname : add unames.sql, -.sh, do_snap.sh
   docker cp unames.sh                 $hname:/usr/local/bin/unames.sh
