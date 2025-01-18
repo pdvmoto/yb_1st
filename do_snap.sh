@@ -19,6 +19,16 @@
 
 # now use the files to generate a snapshot with data, 
 
+echo `date` $0 : ---- generating snapshot snap_id ----- 
+
+# find and set masters for use in yb-admin
+echo  export MASTERS=`cat /root/var/conf/yugabyted.conf | jq -r .current_masters | sed s'/\"//g' ` > /tmp/setmast.sh
+. /tmp/setmast.sh
+
+echo `date` $0 .
+echo `date` $0 used echo to set masters: $MASTERS
+echo `date` $0 .
+
 time ysqlsh -h $HOSTNAME -X <<EOF
 
   \timing
@@ -211,4 +221,4 @@ time ysqlsh -h $HOSTNAME -X <<EOF
 
 EOF
 
-echo snap generated 
+echo `date` $0 : ---- snap generated ----- 

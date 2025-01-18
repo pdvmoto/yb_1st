@@ -1,17 +1,44 @@
 
 generic todo list
 
+ - ysql_bench doesnt seem to work ? 
+    - try from pg container, connect to yb ? 
+
  - remove nodes from cluster, tservers and masters
  - split ash-script into separate repostiories on github
 
- - Next: investigate multi-region and replication.
+ - Next: investigate multi-region and replication.: 
+    seems simple replication
+
+ - check root-req and make profile of query:
+    which sessions, how long, and what items in activity-list.. 
+      given the q-id: sessions, rr-s, and chronological-path over nodes..
+
+ - take slow qrys from ash, and create indexes: inserts-first, do_ar.sh 2nd.
 
  - log an aas; avg-act-ses, find baseload ? 
  - need solution to faster push
 
+ - views over ash-data : smaller tables, more info in view (notably host, query, session)
+
+ - test fast ingest.. ? with at least 1 index on date ? 
+  - with host + now() per deflt-per-recors
+  - with host + now() from with-clause
+  - with 1-per-row, with 100, with 1000 per ins..
+  - use now() versus clock_timestamp()
+  - insert x records... ? 10M ? 
+  - insert from 1 or more nodes..
+  - insert into 1 or 4 tablets
+
+ 
 todo:
+ - qury: find sessions, root-req, timings..
+    - now to get plan from memory ? 
+    - see below sql
+ - make views with crosstab (?) for graphs to adjust for nr servers.
  - quick report on counts: how much data was collected..: chk_ash.sql
  - Master data: detect new combinations for univ_mst, host_mst, mast_mst and tsrv_mst : 
+    - it seems to mix up mast and tsrv ? possibly the delete kv doesnt work
  - add event-listing to main scripts: done, needs testing: check.. ? 
  - tsrv_mst has to act as decoding between uuid and host.
     - snap_id ( = also found_dt )
@@ -84,6 +111,7 @@ next; log data and display in graphana.
 
 
 todo - searching for SQL.
+ - top-SQL with duration via RR
  - top-SQL with count-events.., count per SQL or TSrv
  - top SQL per node (with count-events)
  - top SQL, with most top-PIDs : many small ones
@@ -288,4 +316,82 @@ with h as ( select ybx_get_host() as host )
     FROM yb_servers () s, ybx_tsrv_mst m, h
     WHERE s.host = h.host
      and m.host = h.host ;
+
+
+-- extracting duration form root-request , given SQL 
+-- negative means: the rr did other queries first.
+
+-- with givne SQL, find rr of last 900 sec
+with rr as ( select ad.root_request_id, min ( sample_time) start_dt  -- collection of rrs...
+               from ybx_ashy_log ad 
+               where query_id in (-6243711630595800184)
+               group by ad.root_request_id
+)
+select /*al.top_level_node_id, al.root_request_id, */ al.pid
+, al.host, al.wait_event, qm.query
+, to_char (al.sample_time, 'HH24:MI:SS.MS') as time
+--, to_char ( al.sample_time - start_dt, 'SS.MS' ) as ela_ms
+, extract ( epoch from   al.sample_time - start_dt ) * 1000 as ela_ms
+, al.* 
+from ybx_ashy_log  al
+, rr rr
+, ybx_qury_mst qm
+where 1=1
+and al.root_request_id = rr.root_request_id
+and qm.queryid = al.query_id 
+--and query_id in (3121461546181528127, 99.7608093105707391554, -6243711630595800184)
+order by al.sample_time, pid  desc ;
+
+
+better 
+
+-- with givne SQL, find rr of last 900 sec
+with rr as ( select ad.root_request_id, min ( sample_time) start_dt  -- collection of rrs...
+               from ybx_ashy_log ad 
+               where query_id in (-5862996160561394642)
+                   or 1=0 --pid = 98191
+               group by ad.root_request_id
+)
+select /*al.top_level_node_id, */ al.root_request_id,  al.pid
+, al.host 
+, extract ( epoch from   al.sample_time - start_dt ) * 1000 as ela_ms
+, al.wait_event
+, al.wait_event_aux
+, qm.query
+, to_char (al.sample_time, 'DD HH24:MI:SS.MS') as time
+--, to_char ( al.sample_time - start_dt, 'SS.MS' ) as ela_ms
+, al.* 
+from ybx_ashy_log  al
+, rr rr
+, ybx_qury_mst qm
+where 1=1
+and al.root_request_id = rr.root_request_id
+and qm.queryid = al.query_id 
+--and query_id in (3121461546181528127, 99.7608093105707391554, -6243711630595800184)
+order by al.sample_time , pid  desc
+;
+
+
+psuedo for function:
+ - collect the root-reqs  and min(tie) for the query-id,
+ - for every root req
+    - print session + rr + client_id + client-host + start dt.
+    - loop over ash for rr:
+      -print elepsed (ms). host, wait-ve, table (if any) (componsnet + type + classe)_
+
+could use temp-table like this:
+  origin_host, start_dt, sess, program, pid, datid+datnane, userid_username, rr, on_host, elepsed, event (component, class, type), table-if-known
+
+
+function could report: 
+  - per query (all data from sql): would take additional queries in rr.
+  - per query-per-time-window (default: last hr)
+  - per root-request: all queries in rr.
+  - per session: all rr's per session: top_node + pid [, + startdt.. ]
+
+
+generate a lot of data.. 
+copy seems fastest way to ingest..
+to generate 100 lines of 32 bytes..:
+for i in {1..100}; do head -c 32 /dev/urandom | base64 | head -c 32; echo; done > input.txt
 

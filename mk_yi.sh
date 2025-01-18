@@ -39,14 +39,14 @@
 # nodelist="node6 node7 node8"
 
 # choose an image
-# YB_IMAGE=yugabytedb/yugabyte:latest
+YB_IMAGE=yugabytedb/yugabyte:latest
 # YB_IMAGE=yugabytedb/yugabyte:2.19.0.0-b190        
 # YB_IMAGE=yugabytedb/yugabyte:2.20.1.0-b97
 # YB_IMAGE=yugabytedb/yugabyte:2.20.1.3-b3
 # YB_IMAGE=yugabytedb/yugabyte:2.21.0.0-b545
 # YB_IMAGE=yugabytedb/yugabyte:2.21.1.0-b271
 # YB_IMAGE=yugabytedb/yugabyte:2024.1.1.0-b137
-  YB_IMAGE=pachot/yb-pg15:latest
+# YB_IMAGE=pachot/yb-pg15:latest
 # YB_IMAGE=abhinabsaha/yugabytedb:latest_with_pid
 
 # 26 Aug, didnt have yb_ash view ?
@@ -75,8 +75,8 @@ sleep 2
 #  - how to get to K8s ??
 #
 
-nodenrs="2 3 4 5 6 7 8 "
-# nodenrs="5 "
+nodenrs="2 3 4 5 6 "
+# nodenrs="7 "
 # nodenrs="  "
 
 echo `date` $0 : ---- creating cluster for nodes : $nodenrs -------
@@ -94,6 +94,7 @@ do
   yb13port=1343${nodenr}
   yb15port=1543${nodenr}
 
+  echo .
   echo `date` $0 : ---- doing node $hname  -------
   echo .
 
@@ -104,6 +105,7 @@ do
     -p${yb7port}:7000 -p${yb9port}:9000      \
     -p${yb13port}:13433                      \
     -p${yb15port}:15433                      \
+    -v /Users/pdvbv/yb_data/$hname:/root/var \
     $YB_IMAGE                                \
     tail -f /dev/null `
  
@@ -120,7 +122,8 @@ do
   echo .
   sleep 1
   
-  echo $hname : adding tools 
+  echo .
+  echo `date` $0 : ---- doing tools for node $hname  -------
   echo .
 
   echo $hname : adding profile to already present bashrc...
@@ -197,10 +200,10 @@ EOF
   echo $hname : installing jq and chrony ...
   # docker cp jq $hname:/usr/bin/jq
   docker exec $hname yum install jq -y
-  docker exec $hname yum install chrony -y
+  # docker exec $hname yum install chrony -y
 
   echo .
-  echo $hname : tools installed.
+  echo `date` $0 : ---- tools installed node $hname  -------
   echo .
 
   sleep 1
@@ -239,7 +242,12 @@ echo .
 echo note: we tolerate an error for node2 to allow uniform command for all nodes.
 echo .
 
-sleep 6
+echo .
+echo `date` $0 : ---- first instance done on node2 -------
+echo .
+
+
+sleep 3
 
 echo verify node2..
 docker exec node2 yugabyted status 
@@ -253,6 +261,10 @@ for nodenr in $nodenrs
 do
 
   hname=node${nodenr} 
+
+  echo .
+  echo `date` $0 : ---- starting YB on $hname -------
+  echo .
 
   startcmd=`echo docker exec ${hname} yugabyted start --advertise_address=$hname --join=node2 \
     --tserver_flags=flagfile=/home/yugabyte/ybflags.conf \

@@ -81,7 +81,7 @@ select  count (*) nr_records
       , to_char ( min (sample_time), 'YYYY-MM-DD HH24:MI:SS' ) oldest_stored
       , to_char ( max (sample_time), 'YYYY-MM-DD HH24:MI:SS' ) latest_stored
       , ( max (sample_time)  -  min (sample_time) ) as interval_stored
-from ybx_ash ;
+from ybx_ashy_log ;
 ****/
 
 select
@@ -90,7 +90,7 @@ select
 , to_char ( max (sample_time), 'YYYY-MM-DD HH24:MI:SS' ) latest_stored
 , to_char (  age ( now (), max(sample_time) ), 'ssss' )  secs_ago
 , host
-from ybx_ash 
+from ybx_ashy_log
 group by host
 order by host ;
 
@@ -113,7 +113,7 @@ select
 , to_char ( max (sample_time), 'YYYY-MM-DD HH24:MI:SS' ) latest_stored
 , to_char (  age ( now (), max(sample_time) ), 'ssss' )  secs_ago
 , a.host
-from ybx_ash a, cutoff c
+from ybx_ashy_log a, cutoff c
 where sample_time > c.sincedt
 group by a.host
 order by a.host ;
@@ -146,7 +146,7 @@ select
         count (*)             cnt
       , wait_event_component  busiest_comp 
 --, host
-from ybx_ash ya
+from ybx_ashy_log ya
    , cutoff c 
 where ya.sample_time > c.sincedt
 group by wait_event_component -- , c.host
@@ -163,7 +163,7 @@ select
       , wait_event_component  busiest_comp 
       , wait_event_class      
 --, host
-from ybx_ash ya
+from ybx_ashy_log ya
    , cutoff c 
 where ya.sample_time > c.sincedt
 group by wait_event_component , wait_event_class -- , c.host
@@ -181,7 +181,7 @@ select
       , wait_event_class      
       , count (*)             cnt
 --, host
-from ybx_ash ya
+from ybx_ashy_log ya
    , cutoff c 
 where ya.sample_time > c.sincedt
 group by ya.host, ya.wait_event_component , ya.wait_event_class -- , c.host
@@ -196,7 +196,7 @@ select
           count (*)             cnt
         , wait_event_component  per_comp 
         , ya.host               hostname
-from ybx_ash ya
+from ybx_ashy_log ya
    , cutoff c 
 where ya.sample_time > c.sincedt
 group by 2, 3
@@ -211,7 +211,7 @@ select
           count (*)                 cnt
         , ya.host                   per_host
         , ya.wait_event_component   busiest_comp 
-from ybx_ash ya
+from ybx_ashy_log ya
    , cutoff c
 where ya.sample_time >  c.sincedt
 group by ya.wait_event_component, ya.host
@@ -230,7 +230,7 @@ with cutoff as
 select  count (*)         cnt
       , ya.host           per_host
       , wait_event_class  busiest_class
-from ybx_ash ya
+from ybx_ashy_log ya
    , cutoff c 
 where ya.sample_time > c.sincedt
 group by wait_event_class, ya.host
@@ -253,7 +253,7 @@ limit 30;
 select  count (*)   cnt
       , ya.host     per_host
       ,             wait_event_type
-from ybx_ash ya
+from ybx_ashy_log ya
 where 1=1 -- ya.sample_time > c.sincedt
 and   sample_time > ( now() - make_interval ( secs=> :n_sec )  )
 group by wait_event_type, ya.host
@@ -266,7 +266,7 @@ select count (*) cnt
     , wait_event_class
     , wait_event_type
     , wait_event   as   busiest_event_overall
-from ybx_ash ya
+from ybx_ashy_log ya
    , cutoff c 
 where ya.sample_time > c.sincedt
 group by wait_event_class, wait_event_type, wait_event
@@ -279,7 +279,7 @@ select count (*) cnt
     , wait_event_type
     , wait_event      as  busiest_event
     , ya.host         as  per_host
-from ybx_ash ya
+from ybx_ashy_log ya
    , cutoff c 
 where ya.sample_time > c.sincedt
 group by wait_event_class, wait_event_type, wait_event, host
@@ -292,7 +292,7 @@ with cutoff as ( select now() - make_interval ( secs=>:n_sec ) as sincedt )
 select count (*)  cnt
     , wait_event_aux
     , ya.host
-from ybx_ash ya
+from ybx_ashy_log ya
    , cutoff c 
 where ya.sample_time > c.sincedt
   and ya.wait_event_aux is not null
@@ -305,7 +305,7 @@ select count (*)  cnt
     ,             a.host
     ,             yt.ysql_schema_name
     ,             yt.table_name
-from ybx_ash a
+from ybx_ashy_log a
    , ybx_tblt yt 
 where 1=1
 and   substr ( yt.tablet_id, 1, 15) = a.wait_event_aux  
@@ -324,7 +324,7 @@ select count (*)  cnt
     ,             a.wait_event_aux
     ,             yt.ysql_schema_name
     ,             yt.table_name
-from ybx_ash a
+from ybx_ashy_log a
    , ybx_tblt yt 
 where 1=1
 and   substr ( yt.tablet_id, 1, 15) = a.wait_event_aux  
@@ -346,7 +346,7 @@ limit 30 ;
 \! echo .
 
 select count (*), a.wait_event_type
-from ybx_ash a
+from ybx_ashy_log a
 where 1=1
 --and wait_event_component not in ('YCQL') 
 and a.sample_time > ( now() - make_interval (secs => :n_sec ) ) 
@@ -358,7 +358,7 @@ order by 1 desc ;
 \! echo .
 
 select count (*), a.host, a.wait_event_type
-from ybx_ash a
+from ybx_ashy_log a
 where 1=1
 --and wait_event_component not in ('YCQL') 
 and a.sample_time > ( now() - make_interval (secs => :n_sec ) ) 
@@ -368,26 +368,26 @@ order by a.host, 1 desc ;
 
 /*** 
 select count (*), a.wait_event_component
-from ybx_ash a
+from ybx_ashy_log a
 -- where wait_event_component not in ('YCQL') 
 group by a.wait_event_component 
 order by 1 desc ; 
 
 select count (*), a.host, a.wait_event_component
-from ybx_ash a
+from ybx_ashy_log a
 -- where wait_event_component not in ('YCQL') 
 group by a.host, a.wait_event_component 
 order by a.host, 1 desc ; 
 
 
 select count (*), a.wait_event_class 
-from ybx_ash a
+from ybx_ashy_log a
 --where wait_event_component not in ('YCQL') 
 group by a.wait_event_class 
 order by 1 desc ; 
 
 select count (*), a.host, a.wait_event_class 
-from ybx_ash a
+from ybx_ashy_log a
 --where wait_event_component not in ('YCQL') 
 group by a.host, a.wait_event_class 
 order by a.host, 1 desc ; 
@@ -396,7 +396,7 @@ order by a.host, 1 desc ;
 
 select count (*)  as    cnt
      ,                  a.wait_event 
-from ybx_ash a
+from ybx_ashy_log a
 where 1=1
 and a.sample_time > ( now() - make_interval (secs => :n_sec ) ) 
 group by a.wait_event 
@@ -405,7 +405,7 @@ order by 1 desc ;
 select count (*) as     cnt
      , a.host    as     per_host
      ,                  a.wait_event 
-from ybx_ash a
+from ybx_ashy_log a
 where 1=1
 and a.sample_time > ( now() - make_interval (secs => :n_sec ) ) 
 group by a.host, a.wait_event 
@@ -416,7 +416,7 @@ select                count (*)
     ,                 a.wait_event_aux
     ,                 yt.ysql_schema_name
     ,                 yt.table_name
-from ybx_ash a
+from ybx_ashy_log a
    , ybx_tblt yt 
 where 1=1
 and substr ( yt.tablet_id, 1, 15) = a.wait_event_aux  
@@ -432,7 +432,7 @@ select count (*)  as  cnt
     ,                 a.wait_event_aux
     ,                 yt.ysql_schema_name
     ,                 yt.table_name
-from ybx_ash a
+from ybx_ashy_log a
    , ybx_tblt yt 
 where 1=1
 and substr ( yt.tablet_id, 1, 15) = a.wait_event_aux  
@@ -455,7 +455,7 @@ select count (*)
     , ya.query_id                               top_qry
     , substr ( q.query, 1, 200)              as Query
     --, max ( substr ( ya.query, 1, 200)  )  as Query
-from ybx_ash ya 
+from ybx_ashy_log ya 
    , ybx_pgs_stmt q
 where 1=1
 and   ya.query_id = q.queryid
@@ -474,7 +474,7 @@ select count (*)
     --, min (sample_time) , max(sample_time)
     , ya.root_request_id  top_root_req
     , ya.query_id         top_qry
-from ybx_ash ya 
+from ybx_ashy_log ya 
 where ya.root_request_id::text not like '000%'
 and ya.sample_time > ( now() - make_interval ( secs=>:n_sec ) )
 --and ya.root_request_id::text like 'd1dc9%'
@@ -496,7 +496,7 @@ select count (*)
     , substr ( ya.root_request_id::text, 1, 9)    as    top_root_req
     , ya.query_id                                 as    top_qry
     , max ( substr ( query, 1, 100)  )            as    Query
-from ybx_ash ya 
+from ybx_ashy_log ya 
    , ybx_pgs_stmt q
 where 1=1
 and   q.queryid                 =     ya.query_id
@@ -521,7 +521,7 @@ select
         to_char ( a.sample_time, 'DY HH24:MI') as   dt_minute
       ,                                             a.host 
       , count (*)                                   samples_per_min
-from ybx_ash a
+from ybx_ashy_log a
 where a.sample_time > ( now() - make_interval ( secs=>:n_sec ) )
 --and wait_event_component not in ('YCQL') 
 group by 
@@ -533,7 +533,7 @@ select
   to_char ( a.sample_time, 'DDD DY HH24:00') as     dt_hr
 ,            a.host 
 , count (*)  samples_per_hr
-from ybx_ash a
+from ybx_ashy_log a
    , cutoff c
 where 1=1 
 --and wait_event_component not in ('YCQL') 
@@ -547,7 +547,7 @@ select
   to_char ( a.sample_time, 'DDD DY HH24:MI:00') as     dt_hr
 ,            a.host
 , count (*)  smpls_per
-from ybx_ash a, cutoff c
+from ybx_ashy_log a, cutoff c
 where 1=1
 --and wait_event_component not in ('YCQL')
 and a.sample_time > c.sincedt
@@ -561,7 +561,7 @@ select
   to_char ( a.sample_time, 'D DY HH24:MI DDD') as dt_minute
   --, a.host
 , count (*) cnt_cpu_passive_per_min
-from ybx_ash a
+from ybx_ashy_log a
    , cutoff c
 where 1=1 
 --and wait_event_component not in ('YCQL')
@@ -582,10 +582,10 @@ select  count (*)                             cnt
       ,                                       ash.client_node_ip
       , substr ( psa.application_name, 1, 15) app_name
       , substr ( psa.query, 1, 60 )           query__
-from ybx_ash ash  
+from ybx_ashy_log ash  
  --gv$yb_active_session_history  ash
  , ybx_pgs_act psa
---ybx_ash ash
+--ybx_ashy_log ash
  where 1=1 
  and ash.client_node_ip = host (psa.client_addr) || ':' || psa.client_port
 -- and psa.state ='active'

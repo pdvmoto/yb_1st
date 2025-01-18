@@ -53,8 +53,8 @@ EOF
       sh /tmp/ash_sleep.sh
   else
     echo .
-    echo $0 `date` going to sleep for dflt $N_SEC
-    sleep $N_SEC
+    echo $0 `date` going to sleep for dflt $N_SECS
+    sleep $N_SECS
   fi
 
 done
