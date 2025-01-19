@@ -116,7 +116,7 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   , split_part ( slurp, '|', 3 )::int 		as port  
   , split_part ( slurp, '|', 4 ) 		      as state  
   , split_part ( slurp, '|', 5 ) 		      as role  
-  from ybx_intf order by id 
+  from ybx_intf 
   where host = :hostnm
   returning * ;
 
@@ -169,7 +169,7 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   , split_part ( slurp, '|', 6 )::real   as rd_psec
   , split_part ( slurp, '|', 7 )::real   as wr_psec
   , split_part ( slurp, '|', 8 )::bigint as uptime
-  from ybx_intf order by id  
+  from ybx_intf 
   where host = :hostnm
   returning tsrv_uuid, host, port, status ;
   
