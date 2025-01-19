@@ -1,6 +1,8 @@
 
 generic todo list
 
+ - bug: copy from intf to tables: use :hostnm in wherecluase, otherwise mixing runs
+
  - ysql_bench doesnt seem to work ? 
     - try from pg container, connect to yb ? 
 
@@ -10,11 +12,17 @@ generic todo list
  - Next: investigate multi-region and replication.: 
     seems simple replication
 
+ - investigate ports 13000 and 15000 : curl ? 
+
  - check root-req and make profile of query:
     which sessions, how long, and what items in activity-list.. 
       given the q-id: sessions, rr-s, and chronological-path over nodes..
 
  - take slow qrys from ash, and create indexes: inserts-first, do_ar.sh 2nd.
+    - notaby the grafana sql.. can be better ! 
+
+ - add sar-idle number to host-log: last nr of tghis ..
+   sar 2 1 | tail -n1 | sed 's/ \+/\|/g' 
 
  - log an aas; avg-act-ses, find baseload ? 
  - need solution to faster push

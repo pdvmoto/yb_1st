@@ -46,7 +46,7 @@ time ysqlsh -h $HOSTNAME -X <<EOF
 
 
   -- Universe: clean out infc, slurp the data, and insert
-  delete from ybx_intf where host = ybx_get_host();
+  delete from ybx_intf where host = :hostnm;
 
   \! yb-admin -master_addresses $MASTERS get_universe_config  > /tmp/ybuniv.json
 
@@ -74,12 +74,13 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   , ( slurp::json->>'version' )::int    version
   ,   slurp
   from ybx_intf if
+  where host = :hostnm
   returning * ; 
 
   select '-- $0 -- univ_log created -- ' as msg ;
 
   -- clean out
-  delete from ybx_intf where host = ybx_get_host() ;  
+  delete from ybx_intf where host = :hostnm ;  
 
   \! yb-admin -master_addresses $MASTERS list_all_masters         \
     | expand | tail -n +2 | sed 's/ \+/\|/g' | sed 's/\:/\|/g'    \
@@ -97,6 +98,7 @@ time ysqlsh -h $HOSTNAME -X <<EOF
     , split_part ( slurp, '|', 2 ) 	    	as host  
     , split_part ( slurp, '|', 3 )::int     	as port  
     from ybx_intf
+    where host = :hostnm
   )
   insert into ybx_mast_mst ( snap_id, mast_uuid, host, port )
   select  nm.snap_id, nm.mast_uuid, nm.host, nm.port 
@@ -115,12 +117,13 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   , split_part ( slurp, '|', 4 ) 		      as state  
   , split_part ( slurp, '|', 5 ) 		      as role  
   from ybx_intf order by id 
+  where host = :hostnm
   returning * ;
 
   select '-- $0 -- mast_log created -- ' as msg ;
 
   -- clean out
-  delete from ybx_intf where host = ybx_get_host() ;  
+  delete from ybx_intf where host = :hostnm ;  
 
   \! yb-admin -master_addresses $MASTERS list_all_tablet_servers \
     | expand | tail -n +2 | sed 's/ \+/\|/g' | sed 's/\:/\|/g'  \
@@ -132,18 +135,19 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   WitH ( format text, HEADER false, NULL '' ) ;
 
   -- verify..
-   select  :snap_id                       as snap_id
-          , split_part ( slurp, '|', 1 )::uuid   as tsrv_uuid
-          , split_part ( slurp, '|', 2 )         as host
-          , split_part ( slurp, '|', 3 )::int    as port
-          from ybx_intf ; 
+  --  select  :snap_id                       as snap_id
+  --         , split_part ( slurp, '|', 1 )::uuid   as tsrv_uuid
+  --         , split_part ( slurp, '|', 2 )         as host
+  --         , split_part ( slurp, '|', 3 )::int    as port
+  --         from ybx_intf ; 
 
   with nt as (
-	  select  :snap_id  		 	 as snap_id
+	  select  :snap_id  		 	                as snap_id
 	  , split_part ( slurp, '|', 1 )::uuid   as tsrv_uuid  
 	  , split_part ( slurp, '|', 2 )         as host  
 	  , split_part ( slurp, '|', 3 )::int    as port  
-          from ybx_intf
+    from ybx_intf
+    where host = :hostnm
   )
   insert into ybx_tsrv_mst ( snap_id, tsrv_uuid, host, port ) 
   select  snap_id , tsrv_uuid, host, port 
@@ -166,6 +170,7 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   , split_part ( slurp, '|', 7 )::real   as wr_psec
   , split_part ( slurp, '|', 8 )::bigint as uptime
   from ybx_intf order by id  
+  where host = :hostnm
   returning tsrv_uuid, host, port, status ;
   
   select '-- $0 -- tsrv_log created -- ' as msg ;
@@ -173,7 +178,7 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   -- pick the metrics from yb-function and update records  
   with 
     m as ( select 
-    tm.uuid::uuid as tsrv_uuid
+    tm.uuid::uuid                                             as tsrv_uuid
   , (tm.metrics::json->>'memory_free')::bigint/1024/1024      as mem_free_mb
   , (tm.metrics::json->>'memory_total')::bigint/1024/1024     as mem_total_mb
   , (tm.metrics::json->>'memory_available')::bigint/1024/1024 as mem_avail_mb
@@ -204,12 +209,12 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   select '-- $0 -- tsrv_log updated  -- ' as msg ;
 
   -- final clean out
-  delete from ybx_intf where host = ybx_get_host() ;  
+  delete from ybx_intf where host = :hostnm ;  
 
   -- maybe measure elapsed ?
   with log as (  
     select  clock_timestamp() as logged_dt
-          , ybx_get_host()    as host
+          , :hostnm           as host
           , 'do_snapshot'     as component
           , EXTRACT (EPOCH FROM now () - s.log_dt ) * 1000 as ela_ms
           , 'snap_id = ' || :snap_id::text || '.' as info_txt

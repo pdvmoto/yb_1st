@@ -16,7 +16,8 @@ echo do_all_clu: \[  $* \] ...
 echo .
 
 # do it once, quick...
-for node in node2 node3 node4 node5 node6 node7 node8 node9
+# for node in node2 node3 node4 node5 node6 node7 node8 node9
+for node in node2 node3 node4 node5 node6 
 do
 
   echo doing node $node  
