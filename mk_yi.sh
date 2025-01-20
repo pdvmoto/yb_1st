@@ -75,8 +75,8 @@ sleep 2
 #  - how to get to K8s ??
 #
 
-# nodenrs="2 3 4 5 6 "
-nodenrs="7 8 "
+nodenrs="2 3 4 5 6 "
+# nodenrs="7 8 "
 # nodenrs="  "
 
 echo `date` $0 : ---- creating cluster for nodes : $nodenrs -------
@@ -91,6 +91,8 @@ do
   pgport=543${nodenr}
   yb7port=700${nodenr}
   yb9port=900${nodenr}
+  yb12p000=1200${nodenr}
+  yb13p000=1300${nodenr}
   yb13port=1343${nodenr}
   yb15port=1543${nodenr}
 
@@ -103,6 +105,8 @@ do
     --hostname $hname --name $hname          \
     -p${pgport}:5433                         \
     -p${yb7port}:7000 -p${yb9port}:9000      \
+    -p${yb12p000}:12000                      \
+    -p${yb13p000}:13000                      \
     -p${yb13port}:13433                      \
     -p${yb15port}:15433                      \
     -v /Users/pdvbv/yb_data/$hname:/root/var \
@@ -200,7 +204,7 @@ EOF
   echo $hname : installing jq and chrony ...
   # docker cp jq $hname:/usr/bin/jq
   docker exec $hname yum install jq -y
-  # docker exec $hname yum install chrony -y
+  docker exec $hname yum install chrony -y
 
   echo .
   echo `date` $0 : ---- tools installed node $hname  -------
@@ -247,13 +251,12 @@ echo `date` $0 : ---- first instance done on node2 -------
 echo .
 
 
-sleep 3
+sleep 5
 
 echo verify node2..
 docker exec node2 yugabyted status 
 echo .
 echo another 6 sec ...
-
 
 sleep 6
 
@@ -280,7 +283,7 @@ do
   ${startcmd}
 
   echo .
-  sleep 3
+  sleep 5
 
 done
 
@@ -383,13 +386,13 @@ echo $0 : $hname created...
 #   sleep 999999 
 
 # health checks:
-# docker exec -it node2 yugabyted status 
-# docker exec -it node3 yugabyted status 
-# docker exec -it node4 yugabyted status 
-# docker exec -it node5 yugabyted status 
-# docker exec -it node6 yugabyted status 
-# docker exec -it node7 yugabyted status 
-# docker exec -it node8 yugabyted status 
+ docker exec -it node2 yugabyted status 
+ docker exec -it node3 yugabyted status 
+ docker exec -it node4 yugabyted status 
+ docker exec -it node5 yugabyted status 
+ docker exec -it node6 yugabyted status 
+ docker exec -it node7 yugabyted status 
+ docker exec -it node8 yugabyted status 
 
 echo .
 echo Scroll back and check if it all workd...

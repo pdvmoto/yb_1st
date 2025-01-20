@@ -166,18 +166,31 @@ future questions to answer:
 
 notes:
  - to use pg, initiate and run pgbenh for 30sec  : 
-    pgbench -i              -h localhost -p 5433 -U yugabyte yugabyte
-    pgbench -T 30 -j 2 -c 2 -h localhost -p 5433 -U yugabyte yugabyte
 
- - to use ysql_bench, initiate and run pgbenh for 30sec  : 
-    /home/yugabyte/postgres/bin/ysql_bench -i              -h $HOSTNAME -p 5433 -U yugabyte yugabyte
-    /home/yugabyte/postgres/bin/ysql_bench -T 30 -j 2 -c 2 -h $HOSTNAME -U yugabyte yugabyte
+# prove that pgbench works on local postgres 
+# this works fine, pgbench against local pg, all in same container.
+pgbench -i              -h localhost -p 5432 -U postgres postgres
+pgbench -T 30 -j 2 -c 2 -h localhost -p 5432 -U postgres postgres
 
- - try for a hierarchy, find top-stateent, and events below it..
+# run same pgbench against yugabyte on -h node2 -p 5433 
+# yb is running on 5 nodes (containers) in same network.
+# and psql connectivity seems fine. pgbench throws errors
+./pgbench -i -IdtpG       -h node2 -p 5433 -U yugabyte yugabyte
+./pgbench -T 30 -j 2 -c 2 -h node2 -p 5433 -U yugabyte yugabyte
 
- - pg_stat_statements: 
-    - needs to be reset from time 2time..
-    - contains cumulative values, better to sample every 15 min or so, and keep data with sample-time.
+# and the original error, go to any yuga node and try use ysql_bench, from these:
+/home/yugabyte/postgres/bin/ysql_bench -i              -h $HOSTNAME -p 5433 -U yugabyte yugabyte
+/home/yugabyte/postgres/bin/ysql_bench -T 30 -j 2 -c 2 -h $HOSTNAME -p 5433 -U yugabyte yugabyte
+
+possible fix:
+add -IdtpG to the init.. see Slack
+PGOPTION="-c client_min_messages=error"
+
+- try for a hierarchy, find top-stateent, and events below it..
+
+  - pg_stat_statements: 
+  - needs to be reset from time 2time..
+  - contains cumulative values, better to sample every 15 min or so, and keep data with sample-time.
 
 -- notes on grafana ..
 

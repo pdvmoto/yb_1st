@@ -26,10 +26,35 @@ echo  export MASTERS=`cat /root/var/conf/yugabyted.conf | jq -r .current_masters
 . /tmp/setmast.sh
 
 echo `date` $0 .
-echo `date` $0 used echo to set masters: $MASTERS
+echo `date` $0 found MASTERS : $MASTERS
 echo `date` $0 .
 
 time ysqlsh -h $HOSTNAME -X <<EOF
+
+  -- based on nr seconds since last snapshot: decide to go or nogo
+
+  with l as ( select max (log_dt) as last_snap from ybx_snap_log  )
+  select 
+       trunc ( EXTRACT (EPOCH FROM (now () - l.last_snap) ) )                as ela_sec
+  ,  ( trunc ( EXTRACT (EPOCH FROM (now () - l.last_snap) ) ) < 120 )::text  as nogo
+  from l 
+  \gset 
+
+  select 
+    :ela_sec      as last_snap_was_sec_ago
+  , :nogo         as nogo; 
+
+  -- based on nr seconds since last snapshot: decide to go or nogo
+  \if :nogo
+
+    select :ela_sec as secs, 'since last snap, was recent, hence exiting...' as exit_message ; 
+
+    \quit
+
+  \endif
+
+  select 'exit cond was false, time to do another snapshot...' go_nogo_msg ; 
+
 
   \timing
   \echo on
