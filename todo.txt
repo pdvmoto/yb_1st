@@ -4,6 +4,9 @@ generic todo list
  - check root-req and make profile of query:
     which sessions, how long, and what items in activity-list.. 
       given the q-id: sessions, rr-s, and chronological-path over nodes..
+ - profile known session with long count and function-calls ? 
+
+ - log pg_locks as well ? notably thew yb-json values ?
 
  - take slow qrys from ash, and create indexes: inserts-first, do_ar.sh 2nd.
     - notaby the grafana sql.. can be better ! 

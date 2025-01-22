@@ -1,6 +1,6 @@
 #!/usr/bin/sh  
 
-ASH_SLEEP=120
+ASH_SLEEP=180
 
 echo $0: `date` ash will sleep for $ASH_SLEEP
 

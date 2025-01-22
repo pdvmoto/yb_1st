@@ -36,7 +36,7 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   with l as ( select max (log_dt) as last_snap from ybx_snap_log  )
   select 
        trunc ( EXTRACT (EPOCH FROM (now () - l.last_snap) ) )                as ela_sec
-  ,  ( trunc ( EXTRACT (EPOCH FROM (now () - l.last_snap) ) ) < 120 )::text  as nogo
+  ,  ( trunc ( EXTRACT (EPOCH FROM (now () - l.last_snap) ) ) < 180 )::text  as nogo
   from l 
   \gset 
 
@@ -201,7 +201,7 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   select '-- $0 -- tsrv_log created -- ' as msg ;
  
   -- pick the metrics from yb-function and update records  
-  with 
+  with  /* snap_upd_tsrv_metrics */
     m as ( select 
     tm.uuid::uuid                                             as tsrv_uuid
   , (tm.metrics::json->>'memory_free')::bigint/1024/1024      as mem_free_mb
