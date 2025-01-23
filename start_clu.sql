@@ -20,7 +20,7 @@ do
   echo starting $node
 
   docker start $node
-  sleep 1
+  sleep 2
 
   # remove socket (if exists...)
   cat <<EOF | docker exec -i $node sh
