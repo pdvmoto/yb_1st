@@ -12,10 +12,20 @@ generic todo list
     - generate rr and related records and views (mk_rr.sql) 
     - backup or export all the data to 1 file... for viewing elsewhere.
 
+ = p_get.sh : nice overview of session, can use pg_bench
+    - work on improving, list rr + qry + events in 1 set. order by rr.
+    - list most occuring queries. (for oltp)
+    - add 8-char of wait-aux (to shnow various tablets, dont duplicat table-name
+    - do short bencmark + output.
+    - verify : interval, sql-trace
+    - vary nr of tablets to get more inter-node traffic?
+
  - check root-req and make profile of query:
     which sessions, how long, and what items in activity-list.. 
       given the q-id: sessions, rr-s, and chronological-path over nodes..
+
  - profile known session with long count and function-calls ? 
+    p_get.sh.. can be improved
 
  - log pg_locks as well ? notably thew yb-json values ?
 
