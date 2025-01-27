@@ -6,7 +6,7 @@ generic todo list
     - cleanout: delete all ybx_logg data
     - on 1 node: do_snap.sh: gather meta-data, parent tables..
     - run problem-program
-        - if longer run: collect data every 5 (?) min to not loose buffered recors
+        - if longer run: collect data every 5 (?) min to not lose buffered recors
     - when run finished: collect (final) from all nodes 
     - do_snap.sh (do we need this ? ): it notably provides tsrv_log and mast-log, uptimes...
     - generate rr and related records and views (mk_rr.sql) 
@@ -19,6 +19,19 @@ generic todo list
     - do short bencmark + output.
     - verify : interval, sql-trace
     - vary nr of tablets to get more inter-node traffic?
+
+ - reduce poll-effort: datb + evnt can be 30min things per tsrv..
+    - host-log and filep-scraping can be reduced ? 
+    - interval 30min, or after restart (uptime of tsrv)
+
+ - improve session_detection from ash (remove 1=0 ? ) 
+    - needs a way to correct data for sessions found too-early..
+      update usesysid where null, IF found.. 
+      update backend_start if earlier timestamp found  
+
+ - include rr and rr-qury into ashy ? 
+    - this implies to extract session from ash as well..
+    => much more effort ? 
 
  - check root-req and make profile of query:
     which sessions, how long, and what items in activity-list.. 
