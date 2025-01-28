@@ -446,3 +446,40 @@ copy seems fastest way to ingest..
 to generate 100 lines of 32 bytes..:
 for i in {1..100}; do head -c 32 /dev/urandom | base64 | head -c 32; echo; done > input.txt
 
+
+
+These folks are On To Something Good...
+Yugabyte just released the next version of their PostgreSQL compatible RDBMS, <version here>. 
+The top-end code is a Postgres fork, ensuring seamless compatibility 
+with the thousands of application out there that now use PostgreSQL.
+ 
+The back-end storage layer is based on RocksDB, and allows for data to be replicated for resilience and sharded for scalability. These features make Yugabyte a Very Interesting player in the area of Distributed and serverless databases. 
+
+Furthermore, YBDB seems to have put a lot of effort into the seamless, non-downtime, upgrade-capability. This should mean that future versions of YB are able to catch up with the "current" releases of Poestgres.
+
+And last but not lease, the support seems to be responsive. Even as I wast just discovering the product 
+and doing PoC 
+type of deployments, I seemed to get good ansers to my questions from the YB people on their slack-channel.
+
+
+What I also find important: This database providor is not linked to any of the large cloud-vendors. 
+This should mean that YBDB has no intention of locking you in or "capturing" you onto 1 specific cloud-provider. 
+Just like "serverless" liberates the IT department form the vendors of hardware and services, 
+the "distributed" processing should liberate us from any cloud lock-in.
+
+
+
+Like several other YB-users, I have been waiting for the pg-15 release of YBDB.
+
+Furthermore, Yugabyte now states that future version-upgrades can 
+follow at faster rate, which may help them catch up to PG-17.
+
+After using pg-11 and pg-15 for 
+
+and connectivity from all applications that currently use.
+o
+
+Including the promise that next releases can follow , now PG-
+After observing Yugabyte for a few years, I think they are on the Right Track. The front-end is effectively a Postgres Form, which ensure Excellent Compatibility. The back seems built on RocksDB. The main feature (IMHO) is that this database is now "serverless", meaning you dont know anymore on
+
+I am very curious to see how this concept is going to work out in 
