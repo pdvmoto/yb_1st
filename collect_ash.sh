@@ -31,17 +31,21 @@ do
   yb15port=1543${nodenr}
 
   echo .
-  echo `date '+%Y-%m-%d %H:%M:%S'` $0 : ---- $hname  -------
+  echo `date '+%Y-%m-%d %H:%M:%S'` $0 : ---- Doing $hname  -------
   echo .
 
   psql -h localhost -p ${pgport} -U yugabyte -X -f $ASHFILE
 
   # any other command for the node: here..
 
+  echo .
+  echo `date '+%Y-%m-%d %H:%M:%S'` $0 : ---- Done $hname  -------
+  echo .
+
 done
 
 
-psql -h localhost -p 5433 -X -U yugabyte -f /Users/pdvbv/data/gittest/pg_scripts/mk_rr.sql
+-- psql -h localhost -p 5433 -X -U yugabyte -f /Users/pdvbv/data/gittest/pg_scripts/mk_rr.sql
 
 echo .
 echo `date '+%Y-%m-%d %H:%M:%S'` $0 : \[ $1 \] ... Done -- -- -- -- 

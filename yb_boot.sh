@@ -9,7 +9,7 @@
 #
 
 # a bit quick
-N_SECS=9
+N_SECS=5
 
 
 echo $0 `date` `hostname` rebooting yugabyte ----------- 

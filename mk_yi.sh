@@ -40,6 +40,7 @@
 
 # choose an image
 YB_IMAGE=yugabytedb/yugabyte:latest
+
 # YB_IMAGE=yugabytedb/yugabyte:2.19.0.0-b190        
 # YB_IMAGE=yugabytedb/yugabyte:2.20.1.0-b97
 # YB_IMAGE=yugabytedb/yugabyte:2.20.1.3-b3
@@ -49,11 +50,6 @@ YB_IMAGE=yugabytedb/yugabyte:latest
 # YB_IMAGE=pachot/yb-pg15:latest
 # YB_IMAGE=abhinabsaha/yugabytedb:latest_with_pid
 
-# 26 Aug, didnt have yb_ash view ?
-# YB_IMAGE=yugabytedb/yugabyte:2.20.6.0-b66
-
-# latest was broken on 21-aug-2024?
-# YB_IMAGE=yugabytedb/yugabyte:latest
 
 # get some file to log stmnts, start simple
 LOGFILE=mk_nodes.log
@@ -75,8 +71,8 @@ sleep 2
 #  - how to get to K8s ??
 #
 
-nodenrs="2 3 4 5 6 "
-# nodenrs="7 8 "
+nodenrs="2 3 4 5 "
+# nodenrs="7 "
 # nodenrs="  "
 
 echo `date` $0 : ---- creating cluster for nodes : $nodenrs -------
@@ -139,8 +135,8 @@ do
   docker exec -it $hname sh -c "cp /tmp/.psqlrc /root/.psqlrc"
 
   echo $hname : adding copy of local .exrc
-  docker cp ~/.exrc node2:/tmp/exrc.add
-  docker exec -it  node2 bash -c 'cat /tmp/exrc.add >> ~/.exrc' 
+  docker cp ~/.exrc $hname:/tmp/exrc.add
+  docker exec -it  $hname bash -c 'cat /tmp/exrc.add >> ~/.exrc' 
 
   echo $hname : adding ybflags.conf
   docker cp ybflags.conf $hname:/home/yugabyte/
@@ -197,6 +193,7 @@ do
     chmod 755 /home/yugabyte/bin/yugatool
     ln -s /home/yugabyte/bin/yugatool /usr/local/bin/yugatool
     ln -s /home/yugabyte/postgres/bin/ysql_bench /usr/local/bin/ysql_bench
+    ln -s /home/yugabyte/postgres/bin/pg_isready /usr/local/bin/pg_isready
 EOF
 
   # echo $hname : adding jq .... Why first 
@@ -239,6 +236,9 @@ echo .
   echo $hname ... creating yugabyte instance:
   echo $startcmd >> $LOGFILE
   echo $startcmd
+
+  # do it...
+  ${startcmd}
 
 echo .
 echo database created on node2: 3 sec to Cntr-C .. or .. loop Start over all nodes.
@@ -308,8 +308,8 @@ crenode=` \
 
     #sh -c ' echo \` exec /usr/local/bin/do_stuff.sh \` > /var/log/start.log  && tail -f /dev/null\' `
 
-  echo $hname ... creating container:
-  echo $crenode
+  # echo $hname ... creating container:
+  # echo $crenode
     
   echo $crenode >> $LOGFILE                  
     
@@ -319,58 +319,14 @@ crenode=` \
   #   tail -f /dev/null
   # '
 
-  echo .
-  sleep 1
+  # echo .
+  # sleep 1
 
-  echo $hname : adding tools 
-  echo .
+  # echo $hname : adding tools 
+  # echo Consider creating a function to install tools on a node... 
 
-  echo $hname : adding profile to already present bashrc...
-  docker cp yb_profile.sh $hname:/tmp/
-  docker exec -it $hname sh -c "cat /tmp/yb_profile.sh >> /root/.bashrc "
 
-  echo $hname : adding psqlrc
-  docker cp ~/.psqlrc $hname:/tmp
-  docker exec -it $hname sh -c "cp /tmp/.psqlrc /root/.psqlrc"
-
-  echo $hname : adding ybflags.conf
-  docker cp ybflags.conf $hname:/home/yugabyte/
-
-  echo $hname : adding psg ...
-  docker cp `which psg`     $hname:/usr/local/bin/psg
-  docker exec -it $hname chmod 755 /usr/local/bin/psg
-
-  echo $hname : adding ff ...
-  docker cp `which ff`      $hname:/usr/local/bin/ff
-  docker exec -it $hname chmod 755 /usr/local/bin/ff
-
-  echo $hname : adding do_ashloop.sh and st_ startscript ...
-  docker cp do_ashloop.sh             $hname:/usr/local/bin/do_ashloop.sh
-  docker exec -it $hname   chmod 755         /usr/local/bin/do_ashloop.sh
-  docker cp st_ashloop.sh             $hname:/usr/local/bin/st_ashloop.sh
-  docker exec -it $hname   chmod 755         /usr/local/bin/st_ashloop.sh
-
-  echo $hname : add startsadc.sh or similar to help collect sar
-  docker cp startsadc.sh    $hname:/usr/local/bin/startsadc.sh
-  docker exec -it $hname chmod 755 /usr/local/bin/startsadc.sh
-  # detach, or do it later, bcse takes 30sec: 
-  # docker exec -it $hname startsadc.sh &
-  
-  echo $hname : add do_stuff.sh or similar to help start all
-  docker cp do_stuff.sh    $hname:/usr/local/bin/do_stuff.sh
-  docker exec -it $hname chmod 755 /usr/local/bin/do_stuff.sh
-
-  # more tooling... make sure the files are in working dir
-
-  echo $hname : adding yugatool and enabling ysql_bench...
-  docker cp yugatool.gz $hname:/home/yugabyte/bin
-  cat <<EOF | docker exec -i $hname sh
-    gunzip /home/yugabyte/bin/yugatool.gz
-    chmod 755 /home/yugabyte/bin/yugatool
-    ln -s /home/yugabyte/bin/yugatool /usr/local/bin/yugatool
-    ln -s /home/yugabyte/postgres/bin/ysql_bench /usr/local/bin/ysql_bench
-
-echo $0 : $hname created...
+# echo $0 : $hname created...
 
 # docker run -d --network yb_net  \
 #   --hostname nodeX --name nodeX \

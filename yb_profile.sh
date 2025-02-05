@@ -4,7 +4,7 @@
 #
 
 # jq needs proper install, not yet...
-export MASTERS=`cat /root/var/conf/yugabyted.conf | jq -r .current_masters | sed s'/\"//g' `
+# export MASTERS=`cat /root/var/conf/yugabyted.conf | jq -r .current_masters | sed s'/\"//g' `
 # export MASTERS=`cat /root/var/conf/yugabyted.conf | grep masters | cut -b25-71 `
 # export MASTERS=`cat mst.out | sed s'/\"//g' `  
 
@@ -28,6 +28,22 @@ alias   ybtbts='yb-admin -master_addresses $MASTERS list_tablets '
 alias      ybt='yugatool -m $MASTERS '
 
 alias    yboot='yugabyted stop; sleep 5 ; yugabyted start '
+
+# set MASTERS if possible..
+if  [ -f `which jq` ]
+then
+  # echo found a jq..
+  if  [  -f /root/var/conf/yugabyted.conf  ]
+  then
+    # echo found jq and found config file...
+    export MASTERS=`cat /root/var/conf/yugabyted.conf | jq -r .current_masters | sed s'/\"//g' `
+    echo masterlist is set to $MASTERS
+  else
+    echo MASTERS not set, no conf file found.
+  fi
+else
+   echo "program jq is not installed or the conf file  does not exist."
+fi
 
 # set to bxlls timezone
 TZ='Europe/Brussels'; export TZ

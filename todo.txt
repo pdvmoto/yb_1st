@@ -1,6 +1,10 @@
 
 generic todo list
 
+ - put ybx_logging in separate user, database + tablespace ? 
+    - test by re-creating + rollout.. user goes in ... 
+      do_ashloop.sh, do_snap.sh, do_ar.sh, collect_ash.sh, p_get.sh
+  
  - devise way to snapshot a problem-interval:
     - stop automatic collection
     - cleanout: delete all ybx_logg data
@@ -457,12 +461,12 @@ The back-end storage layer is based on RocksDB, and allows for data to be replic
 
 Furthermore, YBDB seems to have put a lot of effort into the seamless, non-downtime, upgrade-capability. This should mean that future versions of YB are able to catch up with the "current" releases of Poestgres.
 
-And last but not lease, the support seems to be responsive. Even as I wast just discovering the product 
-and doing PoC 
-type of deployments, I seemed to get good ansers to my questions from the YB people on their slack-channel.
+And the support seems to be responsive. Even as I wast just discovering the product 
+and doing DEV- and PoC-type of deployments, 
+I seemed to get good ansers to my questions from the YB people on their slack-channel.
 
 
-What I also find important: This database providor is not linked to any of the large cloud-vendors. 
+What I also find important: This database providor is not (yet) linked to any of the large cloud-vendors. 
 This should mean that YBDB has no intention of locking you in or "capturing" you onto 1 specific cloud-provider. 
 Just like "serverless" liberates the IT department form the vendors of hardware and services, 
 the "distributed" processing should liberate us from any cloud lock-in.
