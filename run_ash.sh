@@ -1,0 +1,76 @@
+#!/bin/ksh
+
+# run_ash1.sh: loop over all nodes to collect ash (And generate rrs?)
+#
+# typical usage: either permanent loop, or after a benchmark, to secure ash-data 
+#
+
+#  verify first, show command
+
+ASHFILE=do_ash_client.sql
+
+ASH_ON_NODE=/usr/local/bin/do_ash.sh
+
+SNAP_NODE=node2
+SNAPFILE=/usr/local/bin/do_snap.sh
+
+PAUSE_SEC=120
+
+
+echo .
+echo `date` $0 : \[  $* \] ... 
+echo .
+
+nodenrs="2 3 4 5 6 " 
+
+while true
+do
+
+  SECONDS=0
+
+  # create nodes, platform, install tools, but no db yet...
+  for nodenr in $nodenrs
+  do
+
+    # define all relevant pieces (no spaces!)
+    hname=node${nodenr}
+    pgport=543${nodenr}
+    yb7port=700${nodenr}
+    yb9port=900${nodenr}
+    yb12p000=1200${nodenr}
+    yb13p000=1300${nodenr}
+    yb13port=1343${nodenr}
+    yb15port=1543${nodenr}
+
+    echo .
+    echo `date '+%Y-%m-%d %H:%M:%S'` $0 : ---- Doing $hname  -------
+    echo .
+
+    # psql -h localhost -p ${pgport} -U yugabyte -X -f $ASHFILE
+
+    docker exec -it $hname $ASH_ON_NODE
+    # any other command for the node: here..
+
+    echo .
+    echo `date '+%Y-%m-%d %H:%M:%S'` $0 : ---- Done $hname  -------
+    echo .
+
+    # just a brief pause..
+    sleep 3 
+
+  done
+
+  # 1 node to do OS-level snapshot..
+  docker exec -it node2 $SNAPFILE
+
+  echo .
+  echo `date '+%Y-%m-%d %H:%M:%S'` $0 : ---- Did loop and snap in $SECONDS sec. Re-start loop after sleep.  -------
+  echo .
+
+  sleep $PAUSE_SEC
+
+done
+
+echo .
+ehco --- $0 should never get here... ---
+ehco .
