@@ -19,6 +19,9 @@
 #
 
 # a bit quick, during benchmarkng, but set to 5 or 10min later
+
+SECONDS=0
+
 N_SECS=180
 F_SEM=/tmp/ybx_ash_off.sem
 
@@ -45,6 +48,8 @@ EOF
 
   fi
  
+  echo .
+  echo $0 on $HOSTNAME spent $SECONDS
   echo .
   date "+%Y-%m-%dT%H:%M:%S do_ashloop.sh on ${HOSTNAME} : sleeping ..."
   echo .

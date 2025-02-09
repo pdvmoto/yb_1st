@@ -19,12 +19,12 @@ note: bcse no host-access,
 SELECT extract(epoch FROM now())::numeric AS start_ash_dt \gset
 
 -- database, not neede for qry-searching
--- select ybx_get_datb () ;
+select ybx_get_datb () ;
 
 -- select ybx_get_tablog () ;
 
 -- no links to tablets yet
--- select ybx_get_tblt () ;
+select ybx_get_tblt () ;
 
 -- rr needs session-parent
 select ybx_get_sess () ;
@@ -36,7 +36,7 @@ select ybx_get_qury () ;
 select ybx_get_ashy () ;
 
 -- not urgent
--- select ybx_get_evnt () ; 
+select ybx_get_evnt () ; 
 
 -- measure total time for adhoc-ash, if poss..
 
