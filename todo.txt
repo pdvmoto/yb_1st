@@ -3,6 +3,8 @@ generic todo list
 
  - install 24.x and upgrade to 25.1
 
+ - test --max_con ??
+
  - Given an SQL, queryid, : which sessions used it (in an RR) and for how long...
 
  - put ybx_logging in separate user, database + tablespace ? 

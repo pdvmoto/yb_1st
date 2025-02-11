@@ -48,7 +48,7 @@ do
 
     # psql -h localhost -p ${pgport} -U yugabyte -X -f $ASHFILE
 
-    docker exec -it $hname $ASH_ON_NODE
+    docker exec  $hname $ASH_ON_NODE
     # any other command for the node: here..
 
     echo .
@@ -61,13 +61,13 @@ do
   done
 
   # 1 node to do OS-level snapshot..
-  docker exec -it node2 $SNAPFILE
+  docker exec node2 $SNAPFILE
 
   echo .
   echo `date '+%Y-%m-%d %H:%M:%S'` $0 : ---- Did loop and snap in $SECONDS sec. Re-start loop after sleep.  -------
   echo .
 
-  sleep $PAUSE_SEC
+  sleep ${PAUSE_SEC}
 
 done
 
