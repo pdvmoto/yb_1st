@@ -8,6 +8,7 @@
 #  verify first, show command
 
 ASHFILE=do_ash_client.sql
+ASHFILE=/usr/local/bin/do_ash.sql
 
 ASH_ON_NODE=/usr/local/bin/do_ash.sh
 
@@ -60,9 +61,9 @@ do
     echo ---- `date '+%Y-%m-%d %H:%M:%S'` $0 : ---- Doing $hname  -------
     echo .
 
-    # psql -h localhost -p ${pgport} -U yugabyte -X -f $ASHFILE
+    ysqlsh -h $hname  -p 5433 -U yugabyte -X -f $ASHFILE
 
-    docker exec  $hname $ASH_ON_NODE
+    # docker exec  $hname $ASH_ON_NODE
     # any other command for the node: here..
 
     echo .
@@ -75,7 +76,7 @@ do
   done
 
   # 1 node to do OS-level snapshot..
-  docker exec node2 $SNAPFILE
+  $SNAPFILE
 
   echo .
   echo ---- `date '+%Y-%m-%d %H:%M:%S'` $0 : ---- Looped in $SECONDS sec. Will re-start after $PAUSE_SEC sec sleep.  -------

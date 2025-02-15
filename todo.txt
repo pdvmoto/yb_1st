@@ -2,6 +2,8 @@
 generic todo list
 
  - install 24.x and upgrade to 25.1
+    ./pg_upgrade --check -U yugabyte --old_host node2 --old_port 5433 --old_data_dir /root/var/data/
+   wait for docker-version?
 
  - test --max_con ??
 

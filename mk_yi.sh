@@ -157,8 +157,12 @@ do
   docker exec -it $hname   chmod 755         /usr/local/bin/do_ashloop.sh
   docker cp st_ashloop.sh             $hname:/usr/local/bin/st_ashloop.sh
   docker exec -it $hname   chmod 755         /usr/local/bin/st_ashloop.sh
+
+  docker cp do_ash.sh                 $hname:/usr/local/bin/do_ash.sh
+  docker exec -it $hname   chmod 755         /usr/local/bin/do_ash.sh
   docker cp do_ash.sql                $hname:/usr/local/bin/do_ash.sql
   docker exec -it $hname   chmod 755         /usr/local/bin/do_ash.sql
+
   docker cp ash_sleep.sh              $hname:/tmp/ash_sleep.sh
   docker exec -it $hname   chmod 755         /tmp/ash_sleep.sh
 
@@ -167,6 +171,7 @@ do
   docker exec -it $hname   chmod 755         /usr/local/bin/unames.sh
   docker cp unames.sql                $hname:/usr/local/bin/unames.sql
   docker exec -it $hname   chmod 755         /usr/local/bin/unames.sql
+
   docker cp do_snap.sh                $hname:/usr/local/bin/do_snap.sh
   docker exec -it $hname   chmod 755         /usr/local/bin/do_snap.sh
 
@@ -308,25 +313,25 @@ crenode=` \
 
     #sh -c ' echo \` exec /usr/local/bin/do_stuff.sh \` > /var/log/start.log  && tail -f /dev/null\' `
 
-  # echo $hname ... creating container:
-  # echo $crenode
+  echo $hname ... creating container:
+  echo $crenode
     
   echo $crenode >> $LOGFILE                  
     
   # do it..
-  # $crenode bash -xc '
-  #   /usr/local/bin/do_stuff.sh
-  #   tail -f /dev/null
-  # '
+  $crenode bash -xc '
+    /usr/local/bin/do_stuff.sh
+    tail -f /dev/null
+  '
 
-  # echo .
-  # sleep 1
+  echo .
+  sleep 1
 
-  # echo $hname : adding tools 
-  # echo Consider creating a function to install tools on a node... 
+  echo $hname : adding tools 
+  echo Consider creating a function to install tools on a node... 
 
 
-# echo $0 : $hname created...
+echo $0 : $hname created...
 
 # docker run -d --network yb_net  \
 #   --hostname nodeX --name nodeX \
