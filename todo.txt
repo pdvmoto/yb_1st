@@ -1,13 +1,22 @@
 
 generic todo list
 
+ - different flagfiles for master + tserver.
+
+ - flag for logs, size! 
+
+ - run pgbench with 1, 3 or 64 tablets (set via ybflag): on docker/mac not much diff.
+
+ - ybx_sess_mst: detect when app_name is modified.. new session ?
+
  - install 24.x and upgrade to 25.1
     ./pg_upgrade --check -U yugabyte --old_host node2 --old_port 5433 --old_data_dir /root/var/data/
    wait for docker-version?
 
- - test --max_con ??
-
  - Given an SQL, queryid, : which sessions used it (in an RR) and for how long...
+
+ - experiment with setting flags..
+  ./bin/yb-ts-cli set_flag --server_address node5:9100 --force ysql_yb_ash_sampling_interval_ms 201 
 
  - put ybx_logging in separate user, database + tablespace ? 
     - test by re-creating + rollout.. user goes in ... 

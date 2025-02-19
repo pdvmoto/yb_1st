@@ -175,7 +175,7 @@ pgbench -T 30 -j 2 -c 2 -h localhost -p 5432 -U postgres postgres
 # run same pgbench against yugabyte on -h node2 -p 5433 
 # yb is running on 5 nodes (containers) in same network.
 # and psql connectivity seems fine. pgbench throws errors
-pgbench -i -IdtpG            -h node2  -p 5433 -U yugabyte yugabyte
+pgbench -i -IdtpG  -s 10     -h node2  -p 5433 -U yugabyte yugabyte
 pgbench -i -IdtpfG -F 800    -h node2 -p 5433 -U yugabyte yugabyte
 pgbench -T 30 -j 2 -c 2      -h node2 -p 5433 -U yugabyte yugabyte
 
