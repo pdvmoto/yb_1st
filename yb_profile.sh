@@ -19,8 +19,8 @@ alias      ysf='ysqlsh postgresql://yugabyte@node2:5433,node3:5433,node4:5433,no
 
 alias      yba='yb-admin -master_addresses $MASTERS '
 alias    ybuni='yb-admin -master_addresses $MASTERS get_universe_config | jq '
-alias   ybmast='yb-admin -master_addresses $MASTERS list_all_masters '
-alias  ybtserv='yb-admin -master_addresses $MASTERS list_all_tablet_servers '
+alias   ybmast='yb-admin -master_addresses $MASTERS list_all_masters  | sort -k 2 '
+alias  ybtserv='yb-admin -master_addresses $MASTERS list_all_tablet_servers  | sort -k 2 '
 alias   ybtrep='yb-admin -master_addresses $MASTERS list_tablet_servers '
 alias   ybtbls='yb-admin -master_addresses $MASTERS list_tables  include_db_type include_table_id include_table_type | sed s'/\./\ /g' '
 alias   ybtbts='yb-admin -master_addresses $MASTERS list_tablets '

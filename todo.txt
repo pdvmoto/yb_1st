@@ -1,13 +1,38 @@
 
 generic todo list
 
- - different flagfiles for master + tserver.
+ - script to examine query, by qry_id
 
- - flag for logs, size! 
+ - get host and get-tserv: use highest snap_id to prevent multiple rows ?
+
+ - data in ybg_tsrv_cpu seems identical over nodes. correct ? => yes, but leave it for now.
+
+ - different flagfiles for master + tserver. ok, but needs work
+    - some unexplicable diff in parameters between master + tserver
+    - some parameters appear in both master + tserv, but belong in only 1 (mostly tserv)
+ - flag for logs, size!  doesnt seem to work
+
+ - script to inject paramters into master:7100 and tserver:7100
+
+ - graphs: use views and include all running nodes (with provision for down-nodes)
+
+ - mount /var/log/sa to /Users/pdvbv/yb_data/sa: 
+  works.. write from 1 node, read from all.
 
  - run pgbench with 1, 3 or 64 tablets (set via ybflag): on docker/mac not much diff.
 
+ - in do_ar, ash-report: include most-exec stmnts total + per host
+    - use re-set of stats after collection ? 
+    - pg_stat_statement_reset () : which views affecte (stmnts?)
+    - pg_stat_reset() : db?
+
+ - consider shared directory for share-files: the ash-scripts in /usr/local/bin? 
+    => careful: goes against the redundancy of disposable nodes, better keep loop-over-nodes
+
+ - output from do_snap and do_ash: include more HH24:MI:SS and nodename
+
  - ybx_sess_mst: detect when app_name is modified.. new session ?
+    ?application_name=abcd or use SET (which comes after the connect)..
 
  - install 24.x and upgrade to 25.1
     ./pg_upgrade --check -U yugabyte --old_host node2 --old_port 5433 --old_data_dir /root/var/data/
@@ -15,7 +40,7 @@ generic todo list
 
  - Given an SQL, queryid, : which sessions used it (in an RR) and for how long...
 
- - experiment with setting flags..
+ - experiment with setting flags.. inject new flag-values
   ./bin/yb-ts-cli set_flag --server_address node5:9100 --force ysql_yb_ash_sampling_interval_ms 201 
 
  - put ybx_logging in separate user, database + tablespace ? 

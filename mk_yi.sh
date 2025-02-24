@@ -71,8 +71,8 @@ sleep 2
 #  - how to get to K8s ??
 #
 
-nodenrs="2 3 4 5 "
-# nodenrs="7 "
+# nodenrs="2 3 4 5 "
+nodenrs="6 7 8 9  "
 # nodenrs="  "
 
 echo `date` $0 : ---- creating cluster for nodes : $nodenrs -------
@@ -106,6 +106,7 @@ do
     -p${yb13port}:13433                      \
     -p${yb15port}:15433                      \
     -v /Users/pdvbv/yb_data/$hname:/root/var \
+    -v /Users/pdvbv/yb_data/sa:/var/log/sa   \
     $YB_IMAGE                                \
     tail -f /dev/null `
  
@@ -139,7 +140,9 @@ do
   docker exec -it  $hname bash -c 'cat /tmp/exrc.add >> ~/.exrc' 
 
   echo $hname : adding ybflags.conf
-  docker cp ybflags.conf $hname:/home/yugabyte/
+  docker cp ybflags.conf       $hname:/home/yugabyte/
+  docker cp yb_mast_flags.conf $hname:/home/yugabyte/
+  docker cp yb_tsrv_flags.conf $hname:/home/yugabyte/
 
   # note: repeating steps for several (7 ?) files.. need function?
 
@@ -192,11 +195,12 @@ do
   # more tooling... make sure the files are in working dir
 
   echo $hname : adding yugatool and enabling ysql_bench...
-  docker cp yugatool.gz $hname:/home/yugabyte/bin
+  #docker cp yugatool.gz $hname:/home/yugabyte/bin
   cat <<EOF | docker exec -i $hname sh
-    gunzip /home/yugabyte/bin/yugatool.gz
-    chmod 755 /home/yugabyte/bin/yugatool
-    ln -s /home/yugabyte/bin/yugatool /usr/local/bin/yugatool
+    # gunzip /home/yugabyte/bin/yugatool.gz
+    # chmod 755 /home/yugabyte/bin/yugatool
+    # ln -s /home/yugabyte/bin/yugatool          /usr/local/bin/yugatool
+    ln -s /home/yugabyte/bin/yb-ts-cli           /usr/local/bin/yb-ts-cli
     ln -s /home/yugabyte/postgres/bin/ysql_bench /usr/local/bin/ysql_bench
     ln -s /home/yugabyte/postgres/bin/pg_isready /usr/local/bin/pg_isready
 EOF
@@ -234,9 +238,8 @@ echo .
 
   startcmd=`echo docker exec node2 yugabyted start \
     --advertise_address=node2       \
-    --tserver_flags=flagfile=/home/yugabyte/ybflags.conf \
-     --master_flags=flagfile=/home/yugabyte/ybflags.conf `
-
+    --tserver_flags=flagfile=/home/yugabyte/yb_tsrv_flags.conf \
+     --master_flags=flagfile=/home/yugabyte/yb_mast_flags.conf `
 
   echo $hname ... creating yugabyte instance:
   echo $startcmd >> $LOGFILE
@@ -275,8 +278,8 @@ do
   echo .
 
   startcmd=`echo docker exec ${hname} yugabyted start --advertise_address=$hname --join=node2 \
-    --tserver_flags=flagfile=/home/yugabyte/ybflags.conf \
-     --master_flags=flagfile=/home/yugabyte/ybflags.conf `
+    --tserver_flags=flagfile=/home/yugabyte/yb_tsrv_flags.conf \
+     --master_flags=flagfile=/home/yugabyte/yb_mast_flags.conf `
 
   # echo command will be : ${startcmd}
 
