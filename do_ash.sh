@@ -32,7 +32,7 @@ else
 
   # snapshot should preceed ash, to catch new tsevers
   # but is only needed on 1 node
-  /usr/local/bin/do_snap.sh
+  # /usr/local/bin/do_snap.sh
 
   ysqlsh -h $HOSTNAME -X <<EOF
 

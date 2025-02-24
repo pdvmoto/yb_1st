@@ -11,7 +11,7 @@ ASHFILE=do_ash_client.sql
 
 ASH_ON_NODE=/usr/local/bin/do_ash.sh
 
-SNAP_NODE=node2
+SNAPNODE=node2
 SNAPFILE=/usr/local/bin/do_snap.sh
 
 PAUSE_SEC=300
@@ -44,26 +44,13 @@ do
 
   SECONDS=0
 
-  # create nodes, platform, install tools, but no db yet...
-  # for nodenr in $nodenrs
+  # use container names (nodenames) and docker exec to avoid problems with port-nrs
   for hname in $nodenames
   do
-
-    # define all relevant pieces (no spaces!)
-    # hname=node${nodenr}
-    # pgport=543${nodenr}
-    # yb7port=700${nodenr}
-    # yb9port=900${nodenr}
-    # yb12p000=1200${nodenr}
-    # yb13p000=1300${nodenr}
-    # yb13port=1343${nodenr}
-    # yb15port=1543${nodenr}
 
     echo .
     echo ---- `date '+%Y-%m-%d %H:%M:%S'` $0 : ---- Doing $hname  -------
     echo .
-
-    # psql -h localhost -p ${pgport} -U yugabyte -X -f $ASHFILE
 
     docker exec  $hname $ASH_ON_NODE
     # any other command for the node: here..
@@ -73,12 +60,12 @@ do
     echo .
 
     # just a brief pause..
-    sleep 3 
+    sleep 2 
 
   done
 
   # 1 node to do OS-level snapshot..
-  docker exec node2 $SNAPFILE
+  docker exec $SNAPNODE  $SNAPFILE
 
   echo .
   echo ---- `date '+%Y-%m-%d %H:%M:%S'` $0 : ---- Looped in $SECONDS sec. Will re-start after $PAUSE_SEC sec sleep.  -------

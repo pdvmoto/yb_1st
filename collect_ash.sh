@@ -14,7 +14,7 @@ echo .
 echo `date` $0 : \[  $* \] ... 
 echo .
 
-nodenrs="2 3 4 5 6 " 
+nodenrs="2 3 4 5 6 7 8 9 " 
 
 # create nodes, platform, install tools, but no db yet...
 for nodenr in $nodenrs

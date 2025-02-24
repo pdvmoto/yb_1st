@@ -91,6 +91,9 @@ docker exec -it $hname   chmod 755         /usr/local/bin/unames.sql
 docker cp do_snap.sh                $hname:/usr/local/bin/do_snap.sh
 docker exec -it $hname   chmod 755         /usr/local/bin/do_snap.sh
 
+docker cp setparm.sh                $hname:/usr/local/bin/setparm.sh
+docker exec -it $hname   chmod 755         /usr/local/bin/setparm.sh
+
 echo $hname : add startsadc.sh or similar to help collect sar
 docker cp startsadc.sh    $hname:/usr/local/bin/startsadc.sh
 docker exec -it $hname chmod 755 /usr/local/bin/startsadc.sh
@@ -114,7 +117,7 @@ cat <<EOF | docker exec -i $hname sh
   # gunzip /home/yugabyte/bin/yugatool.gz
   # chmod 755 /home/yugabyte/bin/yugatool
   # ln -s /home/yugabyte/bin/yugatool          /usr/local/bin/yugatool
-  # ln -s /home/yugabyte/bin/yb-ts-cli           /usr/local/bin/yb-ts-cli
+  # ln -s /home/yugabyte/bin/yb-ts-cli         /usr/local/bin/yb-ts-cli
   ln -s /home/yugabyte/postgres/bin/ysql_bench /usr/local/bin/ysql_bench
   ln -s /home/yugabyte/postgres/bin/pg_isready /usr/local/bin/pg_isready
 EOF
@@ -129,13 +132,7 @@ docker exec $hname yum install chrony -y
 echo .
 echo `date` $0 : ---- tools installed node $hname  -------
 echo .
-
-
-# for all nodes: node-created
-
-echo .
 echo `date` $0 : ---- node configured : $hname  ------
 echo . 
 
-sleep 1
 
