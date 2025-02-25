@@ -18,6 +18,7 @@ generic todo list
  - flag for logs, size!  doesnt seem to work
 
  - script to inject paramters into master:7100 and tserver:7100
+    => setparm.sh
 
  - graphs: use views and include all running nodes (with provision for down-nodes)
 
@@ -47,6 +48,7 @@ generic todo list
 
  - experiment with setting flags.. inject new flag-values
   ./bin/yb-ts-cli set_flag --server_address node5:9100 --force ysql_yb_ash_sampling_interval_ms 201 
+  => setparm.sh
 
  - put ybx_logging in separate user, database + tablespace ? 
     - test by re-creating + rollout.. user goes in ... 

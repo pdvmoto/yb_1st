@@ -5,7 +5,7 @@ beware: needs unames.sh
 
 */
 
-\timing on
+--\timing on
 
 
 -- set start 
