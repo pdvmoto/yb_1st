@@ -4,10 +4,10 @@
 
 # set -v -x 
 
-echo $0 : masterlist : $MASTERS , injecting $1 with value $2
+# echo $0 : masterlist : $MASTERS , injecting $1 with value $2
 
-set -v -x
+# set -v -x
 yb-ts-cli set_flag --server_address $HOSTNAME:9100 --force $1 $2
 
-echo $0 : last errorcode was $?
+echo $0 : param: [ $1 ]  set to [ $2 ]  on server [ $HOSTNAME ] errorcode: [ $? ] 
 

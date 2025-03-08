@@ -9,14 +9,16 @@
 #
 
 # a bit quick
-N_SECS=5
+N_SECS=2
 
 
 echo $0 `date` `hostname` rebooting yugabyte ----------- 
 echo .
 
 yugabyted stop 
+
 sleep $N_SECS
+
 yugabyted start
 
 echo $0 `date` `hostname` yb restarted ----------------

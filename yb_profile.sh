@@ -11,8 +11,8 @@
 alias       ll='ls -la '
 alias      ltm='ls -ltra ' 
 
-alias    ybash='nohup do_ashloop.sh &' 
-alias   ybsadc='nohup /usr/lib64/sa/sa1 60 15000 &'
+alias     ybash='nohup do_ashloop.sh &' 
+alias    ybsadc='nohup /usr/lib64/sa/sa1 60 15000 &'
 
 alias      ysl='ysqlsh -h $HOSTNAME -U yugabyte ' 
 alias      ysf='ysqlsh postgresql://yugabyte@node2:5433,node3:5433,node4:5433,node5:5433,node6:5433,node7:5433,node8:5433?connect_timeout=2 ' 
@@ -24,6 +24,8 @@ alias     ybts='yb-admin -master_addresses $MASTERS list_all_tablet_servers  | s
 alias   ybtrep='yb-admin -master_addresses $MASTERS list_tablet_servers '
 alias   ybtbls='yb-admin -master_addresses $MASTERS list_tables  include_db_type include_table_id include_table_type | sed s'/\./\ /g' '
 alias   ybtbts='yb-admin -master_addresses $MASTERS list_tablets '
+
+alias     ybbl='yb-admin -master_addresses $MASTERS change_blacklist '
 
 alias      ybt='yugatool -m $MASTERS '
 

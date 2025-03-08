@@ -22,7 +22,7 @@ countdown() {
   echo .
   local seconds=$1
   for ((i=seconds; i>=0; i--)); do
-    echo -ne "\rCountdown: $i "
+    echo -ne "\r $i Counting down ... "
     sleep 1
   done
   echo -e "\nTime's up!"
@@ -60,7 +60,7 @@ do
     echo .
 
     # just a brief pause..
-    sleep 2 
+    sleep 1 
 
   done
 

@@ -3,6 +3,17 @@ generic todo list
 
  - script to examine query, by qry_id
 
+ - capture sar, start with 30sec interval: xx_getsar.sh (nasty hack for TZ !)
+    => mk_getsar and do_getsar.sh. executable on each node and call from host (crontab?)
+
+ - consider crontab from mac or 1 host for getsar.sh and run_ash, then tail the resulting logs ?
+
+ - capure nr non-blacklisted (from yb_tservers(), ybx_plcm_mst and ybx_plcm_log (placement),
+    possibly just select blacklist: ybuni | jq '.serverBlacklist.hosts[]' | grep host
+    Add to ybx_snap_log (for now, probably use blackist-property on tsrv_log later)
+
+ - a-b testing: start new clsutr and run test.. repeat..
+
  - log-levels, and reduce amount of log written.. ? seems to work, but how useful.. ?
 
  - get host and get-tserv: use highest snap_id to prevent multiple rows ?
