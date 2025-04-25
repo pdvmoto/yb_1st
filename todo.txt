@@ -3,6 +3,10 @@ generic todo list
 
  - script to examine query, by qry_id
 
+ - do_snap.sh: include all fields from master and tserver, translate heartbeat, uptime, and B/KB/GB etc..
+
+ - function : bytea2bigint : allow decimal representatino of partitin-keys ?
+
  - capture sar, start with 30sec interval: xx_getsar.sh (nasty hack for TZ !)
     => mk_getsar and do_getsar.sh. executable on each node and call from host (crontab?)
 

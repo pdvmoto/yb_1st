@@ -27,15 +27,6 @@ select :hostnm hostname, ybx_get_ashy () ;
 
 select :hostnm hostname, ybx_get_evnt () ; 
 
--- old but keep
-
--- select ybx_get_tblts () ;
-
--- select ybx_get_ash () ;
-
--- select ybx_get_evlst() ; 
-
-
 -- separate script for host-log, scraping..
 
 -- set start 
