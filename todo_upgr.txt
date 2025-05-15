@@ -1,0 +1,36 @@
+
+Hello H,
+
+I'd like to try upgrading a containerized-setup.
+containers are pulled from yugabuytedb/yugabyte:<tags>
+
+my setup is: 
+ - 4 nodes using the docker image 2024.2.2.3-b1
+ - volumes mounted externally, using -v, mapped to /root/var
+   every container has data-volumes mounted, no shared mounts (yet) 
+ - cluster managed by yugabyted.
+ - all nodes have both master and tservers running (no dedicated masternodes)
+ - dedicated flagfiles for master and tserver, but identical on all nodes.
+ - I use command  "tail -f /dev/null ", this keeps container running after yugabyted stop.
+scripts+code on request..
+
+notice that this setup as a few peculiarities:
+ - every image only contains 1 version, so far.
+ - volumes of data can survice container-recreates.
+ - I can remove + recreate containers with same name, hostname and even same IP, 
+ - I can thus mount data-volumes into new versions
+
+my desired setup for upgrade would be: 
+step1: remove a node (a container), without formally remooving the node forom the cluster.
+step2: re-create container with new image, but same name (and IP?) and mount the volume to it
+step3: 
+
+more notes:
+ - can I 
+Questions, at various levels:
+q1: generic: what do you recomend I read for upgrade documentation ?
+q2: am I correct that the IP is crucial in mounting the correct volume to the corret IP (host) ?
+q3: can I (re)join nodes to a cluster that have a higher (major)version of software ?  
+q4: does the cron-extention require extra actions ? (my cron-db is still dflt yugabyte) 
+q3: would you recommend I install two versions in a single container or image ?
+

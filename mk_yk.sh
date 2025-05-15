@@ -20,7 +20,7 @@
 
 
 # choose an image
-YB_IMAGE=yugabytedb/yugabyte:latest
+# YB_IMAGE=yugabytedb/yugabyte:latest
 
 # YB_IMAGE=yugabytedb/yugabyte:2.19.0.0-b190        
 # YB_IMAGE=yugabytedb/yugabyte:2.20.1.0-b97
@@ -28,6 +28,8 @@ YB_IMAGE=yugabytedb/yugabyte:latest
 # YB_IMAGE=yugabytedb/yugabyte:2.21.0.0-b545
 # YB_IMAGE=yugabytedb/yugabyte:2.21.1.0-b271
 # YB_IMAGE=yugabytedb/yugabyte:2024.1.1.0-b137
+  YB_IMAGE=yugabytedb/yugabyte:2024.2.2.3-b1
+
 # YB_IMAGE=pachot/yb-pg15:latest
 # YB_IMAGE=abhinabsaha/yugabytedb:latest_with_pid
 
@@ -52,7 +54,7 @@ sleep 2
 #  - how to get to K8s ??
 #
 
-nodenrs="2 3 4 5 6 7 8 9 "
+nodenrs="2 3 4 5 "
 # nodenrs="  "
 
 echo `date` $0 : ---- creating cluster for nodes : $nodenrs -------

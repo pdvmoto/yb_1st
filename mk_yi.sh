@@ -49,6 +49,7 @@ YB_IMAGE=yugabytedb/yugabyte:latest
 # YB_IMAGE=yugabytedb/yugabyte:2024.1.1.0-b137
 # YB_IMAGE=pachot/yb-pg15:latest
 # YB_IMAGE=abhinabsaha/yugabytedb:latest_with_pid
+YB_IMAGE=yugabytedb/yugabyte:2024.2.2.0-b70 
 
 
 # get some file to log stmnts, start simple
@@ -71,8 +72,8 @@ sleep 2
 #  - how to get to K8s ??
 #
 
-# nodenrs="2 3 4 5 "
-nodenrs="6 7 8 9  "
+nodenrs="2 3 4 "
+# nodenrs="6 7 8 9  "
 # nodenrs="  "
 
 echo `date` $0 : ---- creating cluster for nodes : $nodenrs -------
