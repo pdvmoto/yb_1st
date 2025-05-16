@@ -1,76 +1,17 @@
 
 Hello H,
 
-I'd like to try upgrading a containerized-setup.
-containers are pulled from yugabuytedb/yugabyte:<tags>
-
-my setup is: 
- - 4 nodes using the docker image 2024.2.2.3-b1
- - volumes mounted externally, using -v, mapped to /root/var
-   every container has data-volumes mounted, no shared mounts (yet) 
- - cluster managed by yugabyted.
- - all nodes have both master and tservers running (no dedicated masternodes)
- - dedicated flagfiles for master and tserver, but identical on all nodes.
- - I use command  "tail -f /dev/null ", this keeps container running after yugabyted stop.
-scripts+code on request..
-
-notice that this setup as a few peculiarities:
- - every image only contains 1 version, so far.
- - volumes of data can survice container-recreates.
- - I can remove + recreate containers with same name, hostname and even same IP, 
- - I can thus mount data-volumes into new versions
-
-my desired setup for upgrade would be: 
-step1: remove a node (a container), without formally remooving the node forom the cluster.
-step2: re-create container with new image, but same name (and IP?) and mount the volume to it
-step3: 
-
 more notes:
- - can I 
+
 Questions, at various levels:
 q1: generic: what do you recomend I read for upgrade documentation ?
 q2: am I correct that the IP is crucial in mounting the correct volume to the corret IP (host) ?
-q3: can I (re)join nodes to a cluster that have a higher (major)version of software ?  
+q3: [] can I (re)join nodes to a cluster that have a higher (major)version of software ?  
 q4: does the cron-extention require extra actions ? (my cron-db is still dflt yugabyte) 
-q3: would you recommend I install two versions in a single container or image ?
+q5: would you recommend I install two versions in a single container or image ?
 
 
-Hello H,
-
-I would like to understand a little more about the upgrade process.
-Notably the sequence of actions needed (prepare/shutdown, master, catalog, tserver...).
-
-I gave myself 2 limitations: 
-1-use container/image (with mapped volumes, so data persists outside containers), and 
-2-use yugabyteD as wrapper so I dont have to manually start yb-master and tserver and not worry about the fairly long command-lines they seem to take.
-
-Specific question would be: can I devise an upgrade process using containers(images) with just a single version of the software.
-the current containers I can pull only have either pg11 (2024.x.y.z) or pg15 (25.x) sofware.
-
-I'm thinking of a sequence where I do shutdown (with old verison) and startup (with new container, new version).
-Currently not sure if that is a possiblility.
-
-my other option seems to be to create a container for temporary use where I manually install 2 versions.
-
-
-notes...
-
-first attempt: mount nodeX in same network and try to connect.. 
-
-pg_upgrade error, needs version file
-./postgres/bin/pg_upgrade --check -U yugabyte --old-host node2 --old-port 5433 --old-datadir /root/var/data/pg_data_11
-
-could not open version file "/root/var/data/PG_VERSION": No such file or directory
-Failure, exiting
-
-result: directory or file error..
-
-second attempt: replace a node with newer version, do not start processes...
- - stop + remove node5
- - re-create node5 with new image.
- - run check, looks ok
-
-next stap: compatibility, run this from node5 (or any node with new version)
+command for cp paste...
 ./bin/yb-ts-cli set_flag --server_address node2:7100 ysql_yb_major_version_upgrade_compatibility 11
 ./bin/yb-ts-cli set_flag --server_address node3:7100 ysql_yb_major_version_upgrade_compatibility 11
 ./bin/yb-ts-cli set_flag --server_address node4:7100 ysql_yb_major_version_upgrade_compatibility 11
@@ -86,19 +27,9 @@ next stap: compatibility, run this from node5 (or any node with new version)
 ./bin/yb-ts-cli set_flag --server_address node7:9100 ysql_yb_major_version_upgrade_compatibility 11
 
 
-next: replace master with higher version, all masters..
-=> this would require separate containers with master-processes ?
-=> this would require (manual) kill + re-starting of master one by one ?
 
-hence we need 6 nodes: node2-node7
-we use nodes 2-3-4 as masters, by adding the tservers to blacklist..
-then we replace nodes 2-3-4 by new versions 
-and just start via yugabyted start
+playbook was..:
 
-minimal nr of nodes: 3 masternodes and 3 tserver nodes 
-(every component needs to keep quorum of 2 during restarts...)
-
-playbook :
 10 - run 2024.2.2.x on 6 nodes
 20 - add to all flagfiles:  ysql_yb_major_version_upgrade_compatibility=11
 30 - either restart  all nodes to take parameter into processes, 
@@ -110,12 +41,15 @@ playbook :
       do not start yb processes, 
 60 - use new node to run pg_upgrade --check
       ./postgres/bin/pg_upgrade --check -U yugabyte --old-host node2 --old-port 5433 --old-datadir /root/var/data/pg_data_11
+      rem: all looked good
 
 70 - use 3 master-nodes to replace 1 by 1, 
       running only master-processes (or blacklisted tservers)
       note: some error on starting tserver on node4 (third server?)
+      seems tserver just doesnt run, or doesnt run correct with version-discrepancy. 
+      no showstopper, as I would at this point ideally just run master on new containers anyway.
 
-75 - Question: how do I prevent tservers from starting in new version ???
+75 - Question: how do I prevent tservers from starting in yugabyted, new version ???
       => seems automatic: tserver refuses to start on too-high-version..
 
 80 - monitor phaase... .. ok
