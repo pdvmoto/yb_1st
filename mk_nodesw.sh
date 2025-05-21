@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/bin/bash
 # set -v -x
 #
 # config_node.sh: copy all relevant data + yum-components to node, and place them..
@@ -32,9 +32,13 @@ echo .
 
 hname=$1
 
+echo .
+echo ps list on target node : $hname
+echo .
 docker exec -it $hname ps -ef f 
+echo.
 
-read -t -p 'did that container exist... ?' abc
+read -t 3 -p "did that container exist... " some_var
 
 echo .
 echo `date` $0 : ---- configuring node $hname  -------

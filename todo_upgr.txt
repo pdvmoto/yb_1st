@@ -100,29 +100,59 @@ minimal nr of nodes: 3 masternodes and 3 tserver nodes
 
 playbook :
 10 - run 2024.2.2.x on 6 nodes
-20 - add to all flagfiles:  ysql_yb_major_version_upgrade_compatibility=11
+20 - add to all flagfiles:  --ysql_yb_major_version_upgrade_compatibility=11
 30 - either restart  all nodes to take parameter into processes, 
       or use yb-ts-cli, all master and tserver components
       note: using flagfile doesnt work ?? only cli can inject this paramter?
 40 - add 3 nodes on blacklist, node2-3-4, 
       call those "master nodes" bcse they only run master process ?
+      yb-admin -master_addresses $MASTERS change_blacklist ADD node2
+      yb-admin -master_addresses $MASTERS change_blacklist ADD node3
+      yb-admin -master_addresses $MASTERS change_blacklist ADD node4
 50 - from master-node, use 1 node to replace with new container-image, 
       do not start yb processes, 
+      docker stop node2
+      docker rm node2
+      .. use mk_nodes.log to add node2, map to same drive, do not start yb
+      script file : mku.sh : make the upgraded container, 
+      EDIT nr!
+      remark: some errors when trying to re-start node7.. need to check join= ?
+      behaviour of ysqlhs is funny when 1 of the master nodes is down. investigate later..
+    
+
 60 - use new node to run pg_upgrade --check
-      ./postgres/bin/pg_upgrade --check -U yugabyte --old-host node2 --old-port 5433 --old-datadir /root/var/data/pg_data_11
+      for old_host, use a node :
+        - that still runs old-version, 
+        - that is not on blacklist, 
+        - and has postgres running to connect (in our case, nodes 2,3,4 were blacklisted, master-only)
+      ./postgres/bin/pg_upgrade --check -U yugabyte --old-host node5 --old-port 5433 --old-datadir /root/var/data/pg_data_11
+
+      outcome should be all ok and "clusters are compatible"
 
 70 - use 3 master-nodes to replace 1 by 1, 
+      edit mku.sh, and replace the nodenr, then create the node...
       running only master-processes (or blacklisted tservers)
       note: some error on starting tserver on node4 (third server?)
+      with new version, start, stop-upgrade, and start : 
+        yugabyted start 
+        yugabyted stop --upgrade=true
+        yugabyted start 
+
+      question: does it need upgrade=true for all masters, all nodes, or just for 1st master ?
+      answer from webpage: all nodes (do all nodes, just to be sure..)
+      after this, any node can connect to a non-blacklisted host.., but not to a master-host
 
 75 - Question: how do I prevent tservers from starting in new version ???
       => seems automatic: tserver refuses to start on too-high-version..
 
 80 - monitor phaase... .. ok
 
-90 - use 1 of the new nodes to upgrade catalog (well this work on blacklisted node?)
+90 - use 1 of the new nodes to upgrade catalog (will this work on blacklisted node?)
       yb-admin --master_addresses $MASTERS upgrade_ysql_major_version_catalog
       => no errors...so this looks OK, but check error later, step 130 ?
+
+      or use yugabyted: (this took forever?? then upgraded all 6 nodes, tried again..result was faillure)
+      yugabyted upgrade ysql_catalog
 
 100 - replace nodes 5-6-7 one by one with new container-image to run tservers in newer version, 
       rem: flagfile does not keep compatibility=11, needs manual inject via cli
@@ -149,6 +179,11 @@ playbook :
       ends with "YSQL successfully upgraded to latest version"
 
 180 - monitor...
+      remove the compatibilty 11 from flagfile, restart...
+
+185 - finalize whole process...
+      yugabyted upgrade finalize_new_version
+
 190 - remove nodes from blacklist, to use full cluster again
 200 - run analyze 
 

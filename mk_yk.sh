@@ -37,12 +37,12 @@
 # get some file to log stmnts, start simple
 LOGFILE=mk_nodes.log
 
-echo `date` $0 : creating cluster... >> $LOGFILE
+echo $0 `date +"%Y %b %d %H:%M:%S"` : creating cluster... >> $LOGFILE
 
 # docker network rm yb_net
   docker network create --subnet=172.20.0.0/16 --ip-range=172.20.0.0/24  yb_net
 echo .
-echo network yb_net created, next loop over nodes
+echo $0 `date +"%Y %b %d %H:%M:%S"` : network yb_net created, next loop over nodes
 echo .
 sleep 2
 
@@ -54,10 +54,10 @@ sleep 2
 #  - how to get to K8s ??
 #
 
-nodenrs="5 "
+nodenrs=" 2 3 4 5 6 7 "
 # nodenrs="  "
 
-echo `date` $0 : ---- creating cluster for nodes : $nodenrs -------
+echo $0 `date +"%Y %b %d %H:%M:%S"` : ---- creating cluster for nodes : $nodenrs -------
 echo .
 
 # create nodes, platform, install tools, but no db yet...
@@ -75,7 +75,7 @@ do
   yb15port=1543${nodenr}
 
   echo .
-  echo `date` $0 : ---- doing node $hname  -------
+  echo $0 `date +"%Y %b %d %H:%M:%S"` : ---- doing node $hname  -------
   echo .
 
   crenode=` \
@@ -95,8 +95,8 @@ do
   # to map volume, add this line just above YB_IMAGE..
   #  -v /Users/pdvbv/yb_data/$hname:/root/var \
 
-  echo $hname ... creating container:
-  echo $crenode
+  echo $0 `date +"%Y %b %d %H:%M:%S"` : $hname ... creating container:
+  echo $0 `date +"%Y %b %d %H:%M:%S"` : $crenode
   echo $crenode >> $LOGFILE
 
   # do it..
@@ -106,13 +106,13 @@ do
   sleep 1
   
   echo .
-  echo `date` $0 : ---- doing tools for node $hname  -------
+  echo $0 `date +"%Y %b %d %H:%M:%S"` : ---- doing tools for node $hname  -------
   echo .
 
   ./mk_nodesw.sh  $hname
 
   echo .
-  echo `date` $0 : ---- tools installed node $hname  -------
+  echo $0 `date +"%Y %b %d %H:%M:%S"` : ---- tools installed node $hname  -------
   echo .
 
   sleep 1
@@ -121,16 +121,16 @@ done
 # for all nodes: node-created
 
 echo .
-echo nodes created, next is starting yb 
+echo $0 `date +"%Y %b %d %H:%M:%S"` : nodes created, next is starting yb 
 echo .
-echo pause 5 sec to Cntr-C .. or continue...
+echo $0 `date +"%Y %b %d %H:%M:%S"` : pause 5 sec to Cntr-C .. or continue...
 echo . 
 
 sleep 5
 
 
 echo .
-echo node2 is the first node, need to Create the DB, other will just Join
+echo $0 `date +"%Y %b %d %H:%M:%S"` : node2 is the first node, need to Create the DB, other will just Join
 echo .
 
 # docker exec node2 yugabyted start --advertise_address=node2 --background=true --ui=true
@@ -140,30 +140,30 @@ echo .
     --tserver_flags=flagfile=/home/yugabyte/yb_tsrv_flags.conf \
      --master_flags=flagfile=/home/yugabyte/yb_mast_flags.conf `
 
-  echo $hname ... creating yugabyte instance:
-  echo $startcmd >> $LOGFILE
-  echo $startcmd
+  echo $0 `date +"%Y %b %d %H:%M:%S"` : $hname ... creating yugabyte instance:
+  echo    $startcmd >> $LOGFILE
+  echo $0 `date +"%Y %b %d %H:%M:%S"` : \[ $startcmd \] 
 
   # do it...
   ${startcmd}
 
 echo .
-echo database created on node2: 3 sec to Cntr-C .. or .. loop Start over all nodes.
+echo $0 database created on node2: 3 sec to Cntr-C .. or .. loop Start over all nodes.
 echo .
-echo note: we tolerate an error for node2 to allow uniform command for all nodes.
+echo $0 note: we tolerate an error for node2 to allow uniform command for all nodes.
 echo .
 
 echo .
-echo `date` $0 : ---- first instance done on node2 -------
+echo $0 `date +"%Y %b %d %H:%M:%S"` : ---- first instance done on node2 -------
 echo .
 
 
 sleep 5
 
-echo verify node2..
+echo $0 `date +"%Y %b %d %H:%M:%S"` : verify node2..
 docker exec node2 yugabyted status 
 echo .
-echo another 6 sec ...
+echo $0 `date +"%Y %b %d %H:%M:%S"` : another 6 sec ...
 
 sleep 6
 
@@ -173,7 +173,7 @@ do
   hname=node${nodenr} 
 
   echo .
-  echo `date` $0 : ---- starting YB on $hname -------
+  echo $0 `date +"%Y %b %d %H:%M:%S"` : ---- starting YB on $hname -------
   echo .
 
   startcmd=`echo docker exec ${hname} yugabyted start --advertise_address=$hname --join=node2 \
@@ -182,13 +182,15 @@ do
 
   # echo command will be : ${startcmd}
 
-  echo $hname ... creating yugabyte instance:
-  echo $startcmd
+  echo $0 `date +"%Y %b %d %H:%M:%S"` : $hname ... creating yugabyte instance:
+  echo $0 `date +"%Y %b %d %H:%M:%S"` : \[ $startcmd \]
   echo $startcmd >> $LOGFILE
 
   # do it...
   ${startcmd}
 
+  echo .
+  echo $0 `date +"%Y %b %d %H:%M:%S"` : $hname done ...
   echo .
   sleep 5
 
@@ -229,9 +231,9 @@ crenode=` \
   echo .
   sleep 1
 
-  echo $hname : adding tools 
-  echo Consider creating a function to install tools on a node... 
+  echo $0 $hname : adding tools 
 
+  ./mk_nodesw.sh  $hname
 
 echo $0 : $hname created...
 

@@ -5,6 +5,10 @@ generic todo list
 
  - do_snap.sh: include all fields from master and tserver, translate heartbeat, uptime, and B/KB/GB etc..
 
+ - see todo_update, the join= and behaviour of node7 was strange, when node2 was stopped.
+   despite join=, and otherwise normal system, postgres didnt start if node2 was down?
+   behaviour seemed normal even when yb-stopped, but when node2 stopped, restart on node7 missed postgres?
+
  - function : bytea2bigint : allow decimal representatino of partitin-keys ?
 
  - capture sar, start with 30sec interval: xx_getsar.sh (nasty hack for TZ !)
