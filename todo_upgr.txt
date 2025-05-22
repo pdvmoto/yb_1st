@@ -104,21 +104,26 @@ playbook :
 30 - either restart  all nodes to take parameter into processes, 
       or use yb-ts-cli, all master and tserver components
       note: using flagfile doesnt work ?? only cli can inject this paramter?
+
 40 - add 3 nodes on blacklist, node2-3-4, 
       call those "master nodes" bcse they only run master process ?
       yb-admin -master_addresses $MASTERS change_blacklist ADD node2
       yb-admin -master_addresses $MASTERS change_blacklist ADD node3
       yb-admin -master_addresses $MASTERS change_blacklist ADD node4
-50 - from master-node, use 1 node to replace with new container-image, 
+      note: test without blacklist, 
+      but I would expect errors from lack of quorum when tserver not working.
+
+45 - choose node to upgrade first, but not node2, as it is required for joins by other nodes ?
+
+50 - from master-nodes, use 1 node to replace with new container-image, 
       do not start yb processes, 
-      docker stop node2
-      docker rm node2
-      .. use mk_nodes.log to add node2, map to same drive, do not start yb
+      docker stop node3
+      docker rm node3
+      .. use mk_nodes.log to add node3, map to same drive, do not start yb
       script file : mku.sh : make the upgraded container, 
       EDIT nr!
       remark: some errors when trying to re-start node7.. need to check join= ?
       behaviour of ysqlhs is funny when 1 of the master nodes is down. investigate later..
-    
 
 60 - use new node to run pg_upgrade --check
       for old_host, use a node :
@@ -128,6 +133,10 @@ playbook :
       ./postgres/bin/pg_upgrade --check -U yugabyte --old-host node5 --old-port 5433 --old-datadir /root/var/data/pg_data_11
 
       outcome should be all ok and "clusters are compatible"
+      error code $? should be 0
+
+65 - use ps to generate script mstart.sh : to start master, and run with nohup.
+      this will start only-masters on the 3 master-nodes. prepare for catalog upgrade 
 
 70 - use 3 master-nodes to replace 1 by 1, 
       edit mku.sh, and replace the nodenr, then create the node...
@@ -144,11 +153,13 @@ playbook :
 
 75 - Question: how do I prevent tservers from starting in new version ???
       => seems automatic: tserver refuses to start on too-high-version..
+      => safer to start master from script. create script using ps before shutdown.
 
 80 - monitor phaase... .. ok
 
 90 - use 1 of the new nodes to upgrade catalog (will this work on blacklisted node?)
       yb-admin --master_addresses $MASTERS upgrade_ysql_major_version_catalog
+      takes TIME, stay patient.
       => no errors...so this looks OK, but check error later, step 130 ?
 
       or use yugabyted: (this took forever?? then upgraded all 6 nodes, tried again..result was faillure)
@@ -165,6 +176,7 @@ playbook :
 120 - re-verify all processes are new version
 130 - promote autoflag: ./bin/yb-admin -master_addresses $MASTERS promote_auto_flags
         => Error... something about incomplete catalog-upgrade ?
+        => not needed, as finalize will cover it ? (cf. Hari)
 
 140 - upgraqde catalog: ./bin/yb-admin -master_addresses $MASTERS upgrade_ysql
       in case timeout, use  -timeout_ms 180000 

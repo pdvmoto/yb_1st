@@ -36,9 +36,9 @@ echo .
 echo ps list on target node : $hname
 echo .
 docker exec -it $hname ps -ef f 
-echo.
+echo .
 
-read -t 3 -p "did that container exist... " some_var
+read -t 3 -p "does that container exist... " some_var
 
 echo .
 echo `date` $0 : ---- configuring node $hname  -------
@@ -131,7 +131,7 @@ EOF
 echo $hname : installing jq and chrony ...
 # docker cp jq $hname:/usr/bin/jq
 docker exec $hname yum install jq -y
-docker exec $hname yum install chrony -y
+# docker exec $hname yum install chrony -y
 
 echo .
 echo `date` $0 : ---- tools installed node $hname  -------

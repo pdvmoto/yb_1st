@@ -46,6 +46,9 @@ echo $hname ... created container, check
 # only if start is needed..
 # note that start will use yugabyted.conf, and will thus use flagfiles
 
+# echo $0 exiting before restart 
+# exit 0
+
 docker exec -it $hname yugabyted start
 sleep 1
 docker exec -it $hname yugabyted stop --upgrade=true
@@ -53,6 +56,11 @@ sleep 1
 docker exec -it $hname yugabyted start
 sleep 1
 docker exec -it $hname yugabyted status
+
+echo $0 exiting after start
+
+exit 0
+
 
 # problem was fixed.
 # echo inject parameter from commandpromt, needs $MASTERS
