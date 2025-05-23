@@ -57,7 +57,7 @@ docker exec -it $hname yugabyted start
 sleep 1
 docker exec -it $hname yugabyted status
 
-echo $0 exiting after start
+echo $0 exiting after re-start
 
 exit 0
 

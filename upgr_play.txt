@@ -1,0 +1,237 @@
+
+Hello H,
+
+I'd like to try upgrading a containerized-setup.
+containers are pulled from yugabuytedb/yugabyte:<tags>
+
+my setup is: 
+ - 6 nodes using the docker image 2024.2.2.3-b1, 3 dedicated masternodes, 3 tserv
+ - volumes mounted externally, using -v, mapped to /root/var
+   every container has data-volumes mounted, no shared mounts (yet) 
+ - cluster managed by yugabyted, with a few exeptions...
+   during upgrade run manual:
+      pg_upgrade --check 
+      start masters manual, spool the command using ps -ef | grep yb-mast
+      use yb-admin to upgrade the catalog
+ - after upgrade: all nodes have both master and tservers running (no more dedicated masternodes)
+ - dedicated flagfiles for master and tserver, but identical on all nodes.
+ - I use command  "tail -f /dev/null ", this keeps container running after yugabyted stop.
+scripts+code on request..
+
+notice that this setup as a few peculiarities:
+ - every image only contains 1 version, so far.
+ - volumes of data can survice container-recreates.
+ - I can remove + recreate containers with same name, hostname and even same IP, 
+ - I can thus mount data-volumes into new versions
+
+my desired setup for upgrade would be: 
+step1: remove a node (a container), without formally remooving the node forom the cluster.
+step2: re-create container with new image, but same name (and IP?) and mount the volume to it
+step3: 
+
+more notes:
+ - can I 
+Questions, at various levels:
+q1: generic: what do you recomend I read for upgrade documentation ?
+q2: am I correct that the IP is crucial in mounting the correct volume to the corret IP (host) ?
+q3: can I (re)join nodes to a cluster that have a higher (major)version of software ?  
+q4: does the cron-extention require extra actions ? (my cron-db is still dflt yugabyte) 
+q3: would you recommend I install two versions in a single container or image ?
+
+
+Hello H,
+
+I would like to understand a little more about the upgrade process.
+Notably the sequence of actions needed (prepare/shutdown, master, catalog, tserver...).
+
+I gave myself 2 limitations: 
+1-use container/image (with mapped volumes, so data persists outside containers), and 
+2-use yugabyteD as wrapper so I dont have to manually start yb-master and tserver and not worry about the fairly long command-lines they seem to take.
+
+Specific question would be: can I devise an upgrade process using containers(images) with just a single version of the software.
+the current containers I can pull only have either pg11 (2024.x.y.z) or pg15 (25.x) sofware.
+
+I'm thinking of a sequence where I do shutdown (with old verison) and startup (with new container, new version).
+Currently not sure if that is a possiblility.
+
+my other option seems to be to create a container for temporary use where I manually install 2 versions.
+
+
+notes...
+
+first attempt: mount nodeX in same network and try to connect.. 
+
+pg_upgrade error, needs version file
+./postgres/bin/pg_upgrade --check -U yugabyte --old-host node2 --old-port 5433 --old-datadir /root/var/data/pg_data_11
+
+could not open version file "/root/var/data/PG_VERSION": No such file or directory
+Failure, exiting
+
+result: directory or file error..
+
+second attempt: replace a node with newer version, do not start processes...
+ - stop + remove node5
+ - re-create node5 with new image.
+ - run check, looks ok
+
+in case we need to inject parameter:
+./bin/yb-ts-cli set_flag --server_address node2:7100 ysql_yb_major_version_upgrade_compatibility 11
+
+./bin/yb-ts-cli set_flag --server_address node2:9100 ysql_yb_major_version_upgrade_compatibility 11
+
+
+next: replace master with higher version, all masters..
+=> this would require separate containers with master-processes ?
+=> this would require (manual) kill + re-starting of master one by one ?
+
+hence we need 6 nodes: node2-node7
+we use nodes 2-3-4 as masters, by adding the tservers to blacklist..
+then we replace nodes 2-3-4 by new versions 
+and just start via yugabyted start
+
+minimal nr of nodes: 3 masternodes and 3 tserver nodes 
+(every component needs to keep quorum of 2 during restarts...)
+
+playbook :
+10 - run 2024.2.2.x on 6 nodes
+20 - add to all flagfiles:  --ysql_yb_major_version_upgrade_compatibility=11
+30 - either restart  all nodes to take parameter into processes, 
+      or use yb-ts-cli, all master and tserver components
+
+40 - add 3 nodes to the blacklist, node2-3-4, 
+      call those "master nodes" bcse they only run master process ?
+      they will  not run tservers for a while, 
+      yb-admin -master_addresses $MASTERS change_blacklist ADD node2
+      yb-admin -master_addresses $MASTERS change_blacklist ADD node3
+      yb-admin -master_addresses $MASTERS change_blacklist ADD node4
+      note: test without blacklist, 
+      but I would expect errors from lack of quorum when tserver not working.
+
+45 - choose node to upgrade first, but not node2, 
+      node2 is special? needed as join-taerget in case other nodes need restart ? 
+      Q: is this correct ? 
+
+50 - use mku.sh to replace 1 node with new image.
+        docker stop node3
+        docker rm   node3 
+        edit mku.sh, insert node-NR, then run
+        ./mku.sh  : to re-create + configure new node, with existing volumes.
+        do not start anything.
+
+xx - from new master-nodes, use 1 node to replace with new container-image, 
+      .. use mk_nodes.log to add node3, map to same drive, do not start yb
+      script file : mku.sh : make the upgraded container, 
+      EDIT nr!
+      remark: some errors when trying to re-start node7.. need to check join= ?
+      behaviour of ysqlhs is funny when 1 of the master nodes is down. investigate later..
+
+60 - use new node to run pg_upgrade --check
+      for parameters, old_host, use a node :
+        - that still runs old-version, 
+        - that is not on blacklist, 
+        - and has postgres running to connect (in our case, nodes 2,3,4 were blacklisted, master-only)
+      ./postgres/bin/pg_upgrade --check -U yugabyte --old-host node5 --old-port 5433 --old-datadir /root/var/data/pg_data_11
+
+      outcome should be all ok and "clusters are compatible"
+      error code $? should be 0
+
+65 - on all master nodes: generate/save command to start yb-master :
+      ps -ef | grep yb-mast > /root/var/conf/startm.sh 
+      edit this file to have start command for yb-master,
+      this file will persist on the mounted voume, can be used later with nohup.
+      this will start only-masters on the 3 master-nodes. prepare for catalog upgrade 
+
+66 - on the new master node (node3 in our example), start the master in new version:
+
+      nohup sh /root/var/conf/startm.sh & 
+
+67 - verify all masters running again, one with new version..:
+      yb-admin -master_addresses $MASTERS list_all_masters  | sort -k 2 't 
+      and verify psql still working.
+      and verify from webpages...
+
+70 - use other master-nodes to replace 1 by 1, 
+      verify the start script for masters is present.
+      edit mku.sh : next are numbers 2 and 4: the other master nodes
+      docker stop node2
+      docker rm node2 
+      ./mku.sh : replace node 2, do not start anything.
+      shell into node2 and start master :
+      nohup sh /root/var/conf/startm.sh & 
+
+72 - repeat for node4
+      re-verify everything: list_masters, check sql, check webpages...
+
+80 - monitor phaase... .. ok
+      you now have upgraded master-processes..ready for catalog upgrade
+
+90 - use 1 of the new nodes to upgrade catalog
+      yb-admin --master_addresses $MASTERS upgrade_ysql_major_version_catalog
+      takes TIME, stay patient. !
+      => no errors...so this looks OK, but check error later, step 130 ?
+
+      or use yugabyted: (this took forever?? then upgraded all 6 nodes, tried again..result was faillure)
+      yugabyted upgrade ysql_catalog (does not work yet, needs both master + tserver on 1 node ??)
+
+100 - replace nodes 5-6-7 one by one with new container-image to run tservers in newer version, 
+      these nodes can start via yugabyted straight away, 
+      see code in mku.sh for supposedly stop+upgrade+start
+      note: do all nodes. do not forget...(manual work at the moment..)
+
+105 - seems we need to stop and start all nodes, 1-by-1, with yugabyted --upgrade=true
+        but "--upgrade" can not be found in yugabyted ???
+
+110 - monitor phase..
+120 - re-verify all processes are new version
+130 - promote autoflag: ./bin/yb-admin -master_addresses $MASTERS promote_auto_flags
+        => Error... something about incomplete catalog-upgrade ?
+        => not needed, as finalize will cover it ? (cf. Hari)
+
+140 - upgraqde catalog: ./bin/yb-admin -master_addresses $MASTERS upgrade_ysql
+      yb-admin -master_addresses $MASTERS upgrade_ysql
+      in case timeout, use  -timeout_ms 180000 
+        => successfully upgrade ?? .. despite errors in step above..
+
+150 - monitor...
+160 - disable mixed mode, unset compatibility= (remove from flagfile, restart...)
+      rem: did a stop/start of all yugabyted instances (6 nodes)
+
+170 - finalize: yb-admin --master_addresses $MASTERS finalize_upgrade
+      rem: this seems to include "promote autoflags"
+      ends with "YSQL successfully upgraded to latest version"
+
+180 - monitor...
+      remove the compatibilty 11 from flagfile, restart...
+
+185 - finalize whole process...
+      yugabyted upgrade finalize_new_version
+
+190 - remove nodes from blacklist, to use full cluster again
+200 - run analyze 
+
+
+remarks:
+
+rem1: the user for major upgrade, does it have to be different from "yugabyte" (is it used to stage objects?)
+and if "yugabyte" is allowed, can I set the name in the flagfiles (both master and tserver?) and thus save me the trouble of creating the user ?
+rem1.1: I didnt create this user, and it seems to have upgraded anyway.. ? 
+
+rem2: the parameter: ysql_yb_major_version_upgrade_compatibility, when entered in flagfile, does not seem to come into effect. 
+It only got into my varz by using the command yb-ts-cli set_flag ....
+hence did a lot of repeats: yb_ts_cli set_flag ...
+
+
+-- -- - -
+
+additional reactions to hari:
+ - nodes ?? can be containers, not always
+ - re-mount: always. this keeps my disks to node.. 
+ - do masternodes need the data-disk (yes for logging..)
+ - parameters via restart, to be SURE the flagfile is correct.
+ - --upgrade=true: removes a lot of effort.
+ - but which of the yb-admin is/are the real one?
+ -  only 170, simple, not 150, 160, 180: good.
+ - the 6 nodes are mostly for my own peace of mind. if I play long enough, even a 4node setup will probably work with RF=3.
+ - 4nodes with RF1: I need to think that through, can you eleborate?, trick is probably to keep DB running ?
+ - the first master node has the longest outage, as it does the check. I do not want to use the designated join-node, as I found join=node2 (stored in yugabyted.conf on all nodes) does not work if node2 is "down"
+
