@@ -4,6 +4,8 @@ generic todo list
  - script to examine query, by qry_id
 
  - do_snap.sh: include all fields from master and tserver, translate heartbeat, uptime, and B/KB/GB etc..
+    => evolved to ybx_ash, install via mk_yblog.sql (and 3 dependent files).
+    todo: need update for abstract of event_id
 
  - see todo_update, the join= and behaviour of node7 was strange, when node2 was stopped.
    despite join=, and otherwise normal system, postgres didnt start if node2 was down?
@@ -15,6 +17,7 @@ generic todo list
     => mk_getsar and do_getsar.sh. executable on each node and call from host (crontab?)
 
  - consider crontab from mac or 1 host for getsar.sh and run_ash, then tail the resulting logs ?
+    => works on MBAir, see crontab -l, and ~/do_cr.sh
 
  - capure nr non-blacklisted (from yb_tservers(), ybx_plcm_mst and ybx_plcm_log (placement),
     possibly just select blacklist: ybuni | jq '.serverBlacklist.hosts[]' | grep host

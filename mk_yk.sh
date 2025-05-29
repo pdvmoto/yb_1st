@@ -44,7 +44,7 @@ echo $0 `date +"%Y %b %d %H:%M:%S"` : creating cluster... >> $LOGFILE
 echo .
 echo $0 `date +"%Y %b %d %H:%M:%S"` : network yb_net created, next loop over nodes
 echo .
-sleep 2
+sleep 1
 
 # 
 # test: 
@@ -163,9 +163,9 @@ sleep 5
 echo $0 `date +"%Y %b %d %H:%M:%S"` : verify node2..
 docker exec node2 yugabyted status 
 echo .
-echo $0 `date +"%Y %b %d %H:%M:%S"` : another 6 sec ...
+echo $0 `date +"%Y %b %d %H:%M:%S"` : another 2 sec ...
 
-sleep 6
+sleep 2
 
 for nodenr in $nodenrs
 do
@@ -192,7 +192,7 @@ do
   echo .
   echo $0 `date +"%Y %b %d %H:%M:%S"` : $hname done ...
   echo .
-  sleep 5
+  sleep 2
 
 done
 

@@ -50,19 +50,18 @@ echo $hname ... created container, check
 # exit 0
 
 docker exec -it $hname yugabyted start
-sleep 1
-docker exec -it $hname yugabyted stop --upgrade=true
-sleep 1
-docker exec -it $hname yugabyted start
-sleep 1
-docker exec -it $hname yugabyted status
+
+# no need for stop-upgrade.
+# sleep 1
+# docker exec -it $hname yugabyted stop --upgrade=true
+# sleep 1
+# docker exec -it $hname yugabyted start
+# sleep 1
+# docker exec -it $hname yugabyted status
 
 echo $0 exiting after re-start
 
 exit 0
 
-
 # problem was fixed.
 # echo inject parameter from commandpromt, needs $MASTERS
-
-
