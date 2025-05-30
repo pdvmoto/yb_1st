@@ -1,6 +1,11 @@
 
 generic todo list
 
+ - investigate entrypoint flag to start more then 1 item
+
+ - study logfiles.. so many..
+ - flagfiles in /root/var/conf
+
  - script to examine query, by qry_id
 
  - do_snap.sh: include all fields from master and tserver, translate heartbeat, uptime, and B/KB/GB etc..

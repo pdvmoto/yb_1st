@@ -15,7 +15,6 @@ yb13p000=1300${nodenr}
 yb13port=1343${nodenr}
 yb15port=1543${nodenr}
 
-
 crenode=` \
 echo docker run -d --network yb_net        \
   --hostname $hname --name $hname          \

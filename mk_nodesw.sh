@@ -61,6 +61,10 @@ docker cp ybflags.conf       $hname:/home/yugabyte/
 docker cp yb_mast_flags.conf $hname:/home/yugabyte/
 docker cp yb_tsrv_flags.conf $hname:/home/yugabyte/
 
+# better put flags on persistent volume
+docker cp yb_mast_flags.conf $hname:/root/var/conf/
+docker cp yb_tsrv_flags.conf $hname:/root/var/conf/
+
 # note: repeating steps for several (7 ?) files.. need function?
 
 echo $hname : adding psg ...
