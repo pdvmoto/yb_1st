@@ -62,6 +62,7 @@ docker cp yb_mast_flags.conf $hname:/home/yugabyte/
 docker cp yb_tsrv_flags.conf $hname:/home/yugabyte/
 
 # better put flags on persistent volume
+docker exec -it              $hname mkdir /root/var/conf 
 docker cp yb_mast_flags.conf $hname:/root/var/conf/
 docker cp yb_tsrv_flags.conf $hname:/root/var/conf/
 

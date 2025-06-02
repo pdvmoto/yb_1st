@@ -14,7 +14,7 @@ ASH_ON_NODE=/usr/local/bin/do_ash.sh
 SNAPNODE=node2
 SNAPFILE=/usr/local/bin/do_snap.sh
 
-PAUSE_SEC=300
+PAUSE_SEC=120
 
 countdown() {
   echo .
