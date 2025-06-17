@@ -185,7 +185,7 @@ time ysqlsh -h $HOSTNAME -X <<EOF
 
 
   insert into ybx_tsrv_log ( snap_id, tsrv_uuid, host, port, status
-                           , rd_psec, wr_psec, uptime )
+                           , rd_psec, wr_psec, uptime_s )
   select  :snap_id  
   , split_part ( slurp, '|', 1 )::uuid   as tsrv_uuid
   , split_part ( slurp, '|', 2 )         as host
@@ -193,11 +193,17 @@ time ysqlsh -h $HOSTNAME -X <<EOF
   , split_part ( slurp, '|', 5 )         as status
   , split_part ( slurp, '|', 6 )::real   as rd_psec
   , split_part ( slurp, '|', 7 )::real   as wr_psec
-  , split_part ( slurp, '|', 8 )::bigint as uptime
+  , split_part ( slurp, '|', 8 )::bigint as uptime_s
   from ybx_intf 
   where host = :hostnm
   returning tsrv_uuid, host, port, status ;
   
+  -- notes for above:" field 13=sst_nrfiles
+  -- other fields need decode from KB/MB/GB/TB (or even bytes)
+  -- 9+10 = sst_total_mb
+  -- 11+12 = sst_uncomp_mb
+  -- 14+15 = mem_mb
+
   select '-- $0 -- tsrv_log created -- ' as msg ;
  
   -- pick the metrics from yb-function and update records  
